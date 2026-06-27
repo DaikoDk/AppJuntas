@@ -400,7 +400,6 @@ function abrirPagoModal(btn) {
   document.getElementById('pagoCicloId').value = d.ciclo;
   document.getElementById('pagoJuntaId').value = d.junta;
   document.getElementById('pagoMonto').value = d.debe;
-  document.getElementById('pagoMonto').max = d.debe;
   document.getElementById('modalParticipantName').textContent = d.participante;
   document.getElementById('modalPaymentContext').textContent = 'Semana ' + d.semana + ' — S/ ' + d.debe;
   if (d.inteligente === 'true') {
