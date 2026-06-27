@@ -1,0 +1,472 @@
+<%- include('header') %>
+<% const totalTurnos = turnos.length; %>
+<% const pozoSemanal = junta.monto_aporte * totalTurnos; %>
+<% const ahora = new Date(); %>
+<% if (error === 'fecha_futura') { %>
+<div class="bg-error-container border border-error-container rounded-xl p-4 flex items-center gap-3 mb-4">
+  <span class="material-symbols-outlined text-error-alert">warning</span>
+  <p class="font-body-md text-body-md text-on-surface font-medium">La fecha del pago no puede ser mayor a la actual.</p>
+</div>
+<% } %>
+<section class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-2">
+  <div>
+    <h2 class="font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-surface"><%= junta.nombre %></h2>
+    <div class="flex flex-wrap gap-x-4 gap-y-2 mt-2">
+      <span class="flex items-center gap-1.5 text-on-surface-variant font-label-md text-label-md">
+        <span class="material-symbols-outlined text-[18px]">payments</span> S/ <%= junta.monto_aporte %> x <%= totalTurnos %> turnos
+      </span>
+      <span class="flex items-center gap-1.5 text-on-surface-variant font-label-md text-label-md">
+        <span class="material-symbols-outlined text-[18px]">account_balance_wallet</span> Pozo: S/ <%= pozoSemanal %>
+      </span>
+      <span class="flex items-center gap-1.5 text-on-surface-variant font-label-md text-label-md">
+        <span class="material-symbols-outlined text-[18px]">calendar_today</span> Inicio: <%= new Date(junta.fecha_inicio).toLocaleDateString() %>
+      </span>
+    </div>
+  </div>
+  <div class="flex gap-2">
+    <a href="/juntas" class="flex items-center gap-2 px-4 py-2 rounded-xl border border-outline-variant text-primary font-label-md hover:bg-surface-container transition-colors active:scale-95">
+      <span class="material-symbols-outlined text-[20px]">arrow_back</span> Volver
+    </a>
+    <a href="/juntas/<%= junta.id %>/historial" class="flex items-center gap-2 px-4 py-2 rounded-xl border border-outline-variant text-primary font-label-md hover:bg-surface-container transition-colors active:scale-95">
+      <span class="material-symbols-outlined text-[20px]">history</span> Historial
+    </a>
+  </div>
+</section>
+<% if (historial.length > 0) { %>
+<div class="bg-surface-container-low border border-surface-variant rounded-xl p-4 flex items-center gap-3 mb-4">
+  <div class="w-10 h-10 rounded-full bg-<%= historial[0].tipo === 'pago' ? 'success-payment/10' : (historial[0].tipo === 'pago_eliminado' ? 'error-container' : 'warning-debt/10') %> flex items-center justify-center">
+    <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">
+      <%= historial[0].tipo === 'pago' ? 'check_circle' : (historial[0].tipo === 'pago_eliminado' ? 'undo' : 'swap_horiz') %>
+    </span>
+  </div>
+  <p class="font-body-md text-body-md text-on-surface-variant">
+    <span class="font-semibold text-on-surface">
+      <%= historial[0].tipo === 'pago' ? 'Pago registrado:' : (historial[0].tipo === 'pago_eliminado' ? 'Pago eliminado:' : 'Cesión:') %>
+    </span>
+    <%= historial[0].tipo === 'pago' ? historial[0].participante_nombre + ' pagó S/' + historial[0].monto.toFixed(0) : (historial[0].tipo === 'pago_eliminado' ? historial[0].participante_nombre + ' eliminó S/' + historial[0].monto.toFixed(0) : historial[0].descripcion) %>
+    (<%= historial[0].tipo === 'cesion' ? new Date(historial[0].creado_en || historial[0].fecha_registro).toLocaleDateString() : new Date(historial[0].fecha_pago || historial[0].fecha_registro).toLocaleDateString() %>)
+  </p>
+</div>
+<% } %>
+<% if (turnos.length === 0) { %>
+<div class="bg-surface-container-low border border-surface-variant rounded-xl p-8 text-center">
+  <p class="font-body-md text-body-md text-on-surface-variant">Esta junta no tiene participantes.</p>
+  <a href="/juntas" class="text-primary font-label-md mt-4 inline-block">← Volver a Juntas</a>
+</div>
+<% } else { %>
+<section class="bg-surface-container-lowest rounded-xl p-6 shadow-sm border border-outline-variant/10 mb-6">
+  <h3 class="font-label-md text-label-md text-on-surface-variant mb-6 uppercase tracking-wider">Cronograma de Pagos</h3>
+  <div class="flex items-center justify-between relative overflow-x-auto scrollbar-hide pb-2">
+    <div class="absolute top-5 left-0 w-full h-[2px] bg-surface-container z-0"></div>
+    <% ciclos.forEach((c, idx) => { %>
+      <div class="relative z-10 flex flex-col items-center min-w-[80px]">
+        <div class="w-10 h-10 rounded-full <%= c.completado ? 'bg-success-payment text-on-primary' : (idx === cicloActualIdx ? 'bg-primary text-on-primary timeline-step-active' : 'bg-surface-container text-outline') %> flex items-center justify-center font-bold">
+          <%= c.completado ? '✓' : c.numero %>
+        </div>
+        <span class="mt-3 font-label-sm text-label-sm <%= idx === cicloActualIdx ? 'text-primary font-bold' : 'text-on-surface-variant' %>">
+          <%= idx === cicloActualIdx ? 'AHORA' : 'SEMANA ' + c.numero %>
+        </span>
+      </div>
+    <% }) %>
+  </div>
+  <div class="mt-6 flex flex-wrap gap-4 pt-4 border-t border-outline-variant/10">
+    <div class="flex items-center gap-2 font-label-sm text-label-sm"><span class="w-2.5 h-2.5 rounded-full bg-success-payment"></span> Pagado</div>
+    <div class="flex items-center gap-2 font-label-sm text-label-sm"><span class="w-2.5 h-2.5 rounded-full bg-warning-debt"></span> Parcial</div>
+    <div class="flex items-center gap-2 font-label-sm text-label-sm"><span class="w-2.5 h-2.5 rounded-full bg-primary"></span> Actual</div>
+    <div class="flex items-center gap-2 font-label-sm text-label-sm"><span class="w-2.5 h-2.5 rounded-full bg-surface-container"></span> Futuro</div>
+    <% metodosPago.forEach(m => { %>
+      <div class="flex items-center gap-1 font-label-sm text-label-sm"><%= m.icono %> <%= m.nombre %></div>
+    <% }) %>
+  </div>
+</section>
+<% ciclos.forEach((c, idx) => { %>
+  <% const isPast = c.completado; %>
+  <% const isCurrent = !isPast && idx === cicloActualIdx; %>
+  <% const isFuture = !isPast && idx > cicloActualIdx; %>
+  <% const isIncompletePast = !isPast && idx < cicloActualIdx; %>
+  <% let totalRecaudado = 0; %>
+  <% let participantesConDeuda = 0; %>
+  <% let hayDeudaAnterior = false; %>
+  <% turnos.forEach(t => { %>
+    <% const key = t.id + '-' + c.id; %>
+    <% const pagosArr = pagosPorTurnoCiclo[key] || []; %>
+    <% const total = pagosArr.reduce((s, p) => s + p.monto, 0); %>
+    <% totalRecaudado += total; %>
+    <% if (total < junta.monto_aporte) participantesConDeuda++; %>
+  <% }) %>
+  <section class="space-y-4 mb-6">
+    <div class="flex items-center justify-between">
+      <h3 class="font-headline-md text-headline-md text-on-surface">Participantes - Semana <%= c.numero %></h3>
+      <div class="px-3 py-1 bg-primary/10 text-primary rounded-full font-label-sm text-label-sm">S/ <%= totalRecaudado.toFixed(0) %> / S/ <%= pozoSemanal %></div>
+    </div>
+    <button onclick="toggleSemana(this.nextElementSibling, this)" class="w-full text-left flex items-center justify-between px-4 py-2 rounded-xl bg-surface-container-low hover:bg-surface-container transition-colors font-label-md text-label-md text-on-surface-variant">
+      <%= isPast ? '✓ Completada' : (isCurrent ? '● Semana Actual' : (isIncompletePast ? '⚠ Pendiente' : '🔮 Próxima semana')) %>
+      <span class="material-symbols-outlined"><%= (isCurrent || isIncompletePast) ? 'expand_less' : 'expand_more' %></span>
+    </button>
+    <div class="<%= (isCurrent || isIncompletePast) ? '' : 'hidden' %> grid grid-cols-1 md:grid-cols-2 gap-4">
+      <% turnos.forEach(t => { %>
+        <% const key = t.id + '-' + c.id; %>
+        <% const pagosArr = pagosPorTurnoCiclo[key] || []; %>
+        <% const totalPagado = pagosArr.reduce((s, p) => s + p.monto, 0); %>
+        <% const debe = Math.max(0, junta.monto_aporte - totalPagado); %>
+        <% const completo = totalPagado >= junta.monto_aporte; %>
+        <% let tieneDeudaAnterior = false; %>
+        <% if (idx > 0) { %>
+          <% for (let ci = 0; ci < idx; ci++) { %>
+            <% const ck = t.id + '-' + ciclos[ci].id; %>
+            <% const pa = pagosPorTurnoCiclo[ck] || []; %>
+            <% const tp = pa.reduce((s, p) => s + p.monto, 0); %>
+            <% if (tp < junta.monto_aporte) { tieneDeudaAnterior = true; hayDeudaAnterior = true; break; } %>
+          <% } %>
+        <% } %>
+        <div class="bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-5 hover:shadow-md transition-shadow group">
+          <div class="flex justify-between items-start mb-4">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-lg bg-surface-container flex items-center justify-center font-bold text-primary">#<%= t.orden %></div>
+              <div>
+                <p class="font-headline-sm text-headline-sm text-on-surface"><%= t.participante_nombre %></p>
+                <p class="font-label-sm text-label-sm text-on-surface-variant">
+                  <%= completo ? 'Pagado' : (tieneDeudaAnterior ? 'Bloqueado — Debe ciclo anterior' : (totalPagado > 0 ? 'Pago parcial' : 'Pendiente')) %>
+                </p>
+              </div>
+            </div>
+            <% if (completo) { %>
+              <span class="px-3 py-1 rounded-full bg-emerald-100 text-emerald-700 font-label-sm text-label-sm flex items-center gap-1">
+                <span class="material-symbols-outlined text-[14px]" style="font-variation-settings: 'FILL' 1;">check_circle</span> Pagado
+              </span>
+            <% } else if (tieneDeudaAnterior) { %>
+              <span class="px-3 py-1 rounded-full bg-error-container text-on-error-container font-label-sm text-label-sm flex items-center gap-1">
+                <span class="material-symbols-outlined text-[14px]">block</span> Bloqueado
+              </span>
+            <% } else { %>
+              <span class="px-3 py-1 rounded-full bg-warning-debt/10 text-warning-debt font-label-sm text-label-sm flex items-center gap-1">
+                <span class="material-symbols-outlined text-[14px]">schedule</span> Pendiente
+              </span>
+            <% } %>
+          </div>
+          <% if (pagosArr.length > 0) { %>
+            <div class="border-t border-outline-variant/10 pt-3 mb-3 space-y-1">
+              <% pagosArr.forEach(p => { %>
+                <div class="flex items-center justify-between font-label-sm text-label-sm text-on-surface-variant">
+                  <span><%= p.metodo_icono %> <%= p.metodo_nombre %></span>
+                  <span class="font-medium text-on-surface">S/ <%= p.monto.toFixed(0) %></span>
+                  <span class="text-outline"><%= new Date(p.fecha_pago).toLocaleString() %></span>
+                </div>
+              <% }) %>
+              <div class="font-label-sm text-label-sm text-on-surface-variant pt-1 border-t border-outline-variant/5">Total: <span class="font-semibold text-on-surface">S/ <%= totalPagado.toFixed(0) %></span> de <span class="text-outline">S/ <%= junta.monto_aporte.toFixed(0) %></span></div>
+            </div>
+          <% } %>
+          <div class="flex justify-between items-end border-t border-outline-variant/10 pt-4">
+            <div>
+              <p class="font-label-sm text-label-sm text-on-surface-variant"><%= completo ? 'Total Pagado' : (tieneDeudaAnterior ? 'Deuda bloqueada' : 'Deuda pendiente') %></p>
+              <p class="font-headline-md text-headline-md <%= completo ? 'text-success-payment' : 'text-error-alert' %>">S/ <%= completo ? totalPagado.toFixed(0) : debe.toFixed(0) %></p>
+            </div>
+            <div class="flex gap-2">
+              <% if (!isPast && !completo) { %>
+                <button onclick="abrirPagoModal(this)"
+                  data-turno="<%= t.id %>" data-ciclo="<%= c.id %>" data-junta="<%= junta.id %>"
+                  data-participante="<%= t.participante_nombre %>" data-debe="<%= debe.toFixed(0) %>"
+                  data-semana="<%= c.numero %>" data-inteligente="<%= tieneDeudaAnterior %>"
+                  class="flex items-center gap-2 px-4 py-2 bg-primary text-on-primary rounded-xl font-semibold hover:bg-primary-container shadow-lg shadow-primary/20 active:scale-95 transition-all font-label-sm">
+                  <span class="material-symbols-outlined" style="font-size:16px">payments</span> Cobrar
+                </button>
+              <% } %>
+              <% if (!isPast && completo) { %>
+                <form method="POST" action="/pagos/deshacer" class="inline">
+                  <input type="hidden" name="turno_id" value="<%= t.id %>">
+                  <input type="hidden" name="ciclo_id" value="<%= c.id %>">
+                  <input type="hidden" name="junta_id" value="<%= junta.id %>">
+                  <button type="submit" class="w-10 h-10 rounded-xl flex items-center justify-center text-on-surface-variant hover:bg-surface-variant/50 active:scale-90 transition-all">
+                    <span class="material-symbols-outlined">undo</span>
+                  </button>
+                </form>
+              <% } %>
+            </div>
+          </div>
+        </div>
+      <% }) %>
+    </div>
+    <% if (hayDeudaAnterior) { %>
+      <div class="bg-warning-debt/10 border border-warning-debt/20 rounded-xl p-3 flex items-center gap-2">
+        <span class="material-symbols-outlined text-warning-debt">info</span>
+        <p class="font-label-sm text-label-sm text-on-surface-variant">Algunos participantes deben ciclos anteriores. El pago se redirigirá a la deuda más antigua.</p>
+      </div>
+    <% } %>
+  </section>
+<% }) %>
+<!-- Balance Table -->
+<section class="bg-surface-container-lowest rounded-2xl p-6 shadow-sm border border-outline-variant/20 mb-6">
+  <div class="flex items-center gap-2 mb-6">
+    <span class="material-symbols-outlined text-primary">analytics</span>
+    <h3 class="font-headline-md text-headline-md text-on-surface">Balance por Participante</h3>
+  </div>
+  <div class="overflow-x-auto">
+    <table class="w-full text-left border-collapse">
+      <thead>
+        <tr class="text-on-surface-variant border-b border-outline-variant/10">
+          <th class="py-4 font-label-md text-label-md">Participante</th>
+          <th class="py-4 font-label-md text-label-md text-right">Pagado</th>
+          <th class="py-4 font-label-md text-label-md text-right">Deuda Total</th>
+          <th class="py-4 font-label-md text-label-md text-right">Estado</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-outline-variant/10">
+        <% turnos.forEach(t => { %>
+          <% const b = balancePorTurno[t.id]; %>
+          <tr class="hover:bg-surface-container-low transition-colors">
+            <td class="py-4 font-medium text-on-surface"><%= t.participante_nombre %></td>
+            <td class="py-4 text-right text-on-surface-variant">S/ <%= b.total_pagado.toFixed(0) %></td>
+            <td class="py-4 text-right text-on-surface-variant">S/ <%= b.total_debido.toFixed(0) %></td>
+            <td class="py-4 text-right">
+              <span class="font-medium <%= b.saldo >= 0 ? 'text-success-payment' : 'text-error-alert' %>">
+                <%= b.saldo >= 0 ? 'S/' + b.saldo.toFixed(0) + ' a favor' : 'S/' + Math.abs(b.saldo).toFixed(0) + ' deuda' %>
+              </span>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+</section>
+<!-- Ceder Turno -->
+<section class="flex flex-col md:flex-row items-center justify-between gap-6 bg-surface-dim/20 rounded-2xl p-6 border border-dashed border-outline mb-6">
+  <div class="flex items-center gap-4">
+    <div class="w-12 h-12 rounded-full bg-surface-container-highest flex items-center justify-center">
+      <span class="material-symbols-outlined text-on-surface">swap_horiz</span>
+    </div>
+    <div>
+      <h4 class="font-headline-sm text-headline-sm text-on-surface">Ceder turno</h4>
+      <p class="font-label-sm text-label-sm text-on-surface-variant">Transfiere la posición a otro integrante</p>
+    </div>
+  </div>
+  <button class="px-6 py-2.5 border border-outline text-on-surface rounded-xl font-label-md hover:bg-surface-container-high active:scale-95 transition-all" onclick="toggleCeder()">Gestionar Turnos</button>
+</section>
+<div class="hidden mb-6" id="cederForm">
+  <div class="bg-surface-container-lowest p-6 rounded-2xl shadow-lg border border-outline-variant/30 space-y-4">
+    <form method="POST" action="/juntas/<%= junta.id %>/ceder" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div>
+        <label class="block font-label-sm text-label-sm text-on-surface-variant mb-2">Turno a ceder</label>
+        <select name="turno_id" class="w-full bg-surface border border-outline-variant rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary outline-none">
+          <% turnos.forEach(t => { %>
+            <option value="<%= t.id %>">#<%= t.orden %> - <%= t.participante_nombre %></option>
+          <% }) %>
+        </select>
+      </div>
+      <div>
+        <label class="block font-label-sm text-label-sm text-on-surface-variant mb-2">Nuevo participante</label>
+        <select name="nuevo_participante_id" class="w-full bg-surface border border-outline-variant rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary outline-none">
+          <% participantes.forEach(p => { %>
+            <option value="<%= p.id %>"><%= p.nombre %></option>
+          <% }) %>
+        </select>
+      </div>
+      <div class="md:col-span-2">
+        <button type="submit" class="w-full py-3.5 bg-primary text-on-primary rounded-xl font-bold hover:bg-primary-container active:scale-95 transition-all">Confirmar Traspaso</button>
+      </div>
+    </form>
+  </div>
+</div>
+<% } %>
+<!-- FAB -->
+<button class="fixed bottom-24 right-6 md:right-12 w-14 h-14 bg-primary text-on-primary rounded-full shadow-2xl flex items-center justify-center z-40 active:scale-90 hover:scale-105 transition-all group" onclick="document.getElementById('modalGeneral').classList.remove('hidden')">
+  <span class="material-symbols-outlined text-[28px]" style="font-variation-settings: 'FILL' 1;">payments</span>
+</button>
+<!-- Modal Overlay -->
+<div class="fixed inset-0 z-[60] bg-on-surface/40 premium-blur hidden" id="modalOverlay" onclick="closeModals()"></div>
+<!-- Modal General -->
+<div class="fixed inset-0 z-[70] flex items-center justify-center p-4 pointer-events-none opacity-0 transition-opacity duration-300 hidden" id="modalGeneral">
+  <div class="bg-surface-container-lowest w-full max-w-md rounded-[2rem] p-8 shadow-2xl pointer-events-auto transform translate-y-8 transition-transform duration-300 max-h-[80vh] overflow-y-auto" id="modalGeneralBody">
+    <div class="flex justify-between items-start mb-6">
+      <div>
+        <h2 class="font-headline-md text-headline-md text-on-surface">Deudas Pendientes</h2>
+        <p class="text-on-surface-variant font-label-md">Resumen de pagos faltantes</p>
+      </div>
+      <button class="w-10 h-10 rounded-full flex items-center justify-center hover:bg-surface-container active:scale-90 transition-all" onclick="closeModals()">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+    <div class="space-y-4">
+      <% let totalDeudas = 0; let deudoresCount = 0; %>
+      <% ciclos.filter(c => !c.completado).forEach(c => { %>
+        <% let cicloDeudas = []; %>
+        <% turnos.forEach(t => { %>
+          <% const key = t.id + '-' + c.id; %>
+          <% const pagos = pagosPorTurnoCiclo[key] || []; %>
+          <% const totalPagado = pagos.reduce((s, p) => s + p.monto, 0); %>
+          <% const debe = Math.max(0, junta.monto_aporte - totalPagado); %>
+          <% if (debe > 0) { cicloDeudas.push({ turno: t, debe }); totalDeudas += debe; deudoresCount++; } %>
+        <% }) %>
+        <% if (cicloDeudas.length > 0) { %>
+          <div class="bg-surface-container-low rounded-xl p-4">
+            <p class="font-label-sm text-label-sm text-primary font-bold mb-3">Semana <%= c.numero %><%= c.fecha_cierre ? ' — ' + new Date(c.fecha_cierre).toLocaleDateString() : '' %></p>
+            <div class="space-y-2">
+              <% cicloDeudas.forEach(({ turno: t, debe }) => { %>
+                <div class="flex items-center justify-between py-2 border-b border-outline-variant/10 last:border-0">
+                  <span class="font-body-md text-body-md text-on-surface"><%= t.participante_nombre %></span>
+                  <span class="font-semibold text-error-alert">S/ <%= debe.toFixed(0) %></span>
+                </div>
+              <% }) %>
+            </div>
+          </div>
+        <% } %>
+      <% }) %>
+      <% if (totalDeudas === 0) { %>
+        <div class="text-center py-8">
+          <span class="material-symbols-outlined text-success-payment text-4xl">check_circle</span>
+          <p class="font-body-md text-body-md text-on-surface-variant mt-2">Todos han pagado</p>
+        </div>
+      <% } else { %>
+        <div class="bg-primary/5 rounded-xl p-4 text-center">
+          <p class="font-label-sm text-label-sm text-on-surface-variant">Total deudas: <span class="font-bold text-primary">S/ <%= totalDeudas.toFixed(0) %></span> · <%= deudoresCount %> persona(s)</p>
+        </div>
+      <% } %>
+    </div>
+  </div>
+</div>
+<!-- Modal Individual -->
+<div class="fixed inset-0 z-[70] flex items-center justify-center p-4 pointer-events-none opacity-0 transition-opacity duration-300 hidden" id="paymentModal">
+  <div class="bg-surface-container-lowest w-full max-w-md rounded-[2rem] p-8 shadow-2xl pointer-events-auto transform translate-y-8 transition-transform duration-300">
+    <div class="flex justify-between items-start mb-6">
+      <div>
+        <h2 class="font-headline-md text-headline-md text-on-surface" id="modalParticipantName">Registrar Pago</h2>
+        <p class="text-on-surface-variant font-label-md" id="modalPaymentContext">Semana — Pendiente</p>
+      </div>
+      <button class="w-10 h-10 rounded-full flex items-center justify-center hover:bg-surface-container active:scale-90 transition-all" onclick="cerrarPagoModal()">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+    <div id="pagoAdvertencia" class="hidden bg-warning-debt/10 border border-warning-debt/20 rounded-xl p-3 flex items-center gap-2 mb-4">
+      <span class="material-symbols-outlined text-warning-debt">info</span>
+      <p class="font-label-sm text-label-sm text-on-surface-variant">Este participante debe una semana anterior. El pago se redirigirá a la deuda más antigua.</p>
+    </div>
+    <form id="formPago" method="POST" class="space-y-6">
+      <input type="hidden" name="turno_id" id="pagoTurnoId">
+      <input type="hidden" name="ciclo_id" id="pagoCicloId">
+      <input type="hidden" name="junta_id" id="pagoJuntaId">
+      <input type="hidden" name="fecha_pago" id="pagoFechaCompleta">
+      <div>
+        <label class="block font-label-sm text-label-sm text-on-surface-variant mb-2 font-semibold">MONTO A PAGAR</label>
+        <div class="relative">
+          <span class="absolute left-4 top-1/2 -translate-y-1/2 text-2xl font-bold text-on-surface-variant">S/</span>
+          <input type="number" name="monto" id="pagoMonto" step="0.5" min="1"
+            class="w-full bg-surface border-none rounded-2xl pl-12 pr-4 py-5 text-4xl font-bold text-primary focus:ring-2 focus:ring-primary outline-none text-center">
+        </div>
+      </div>
+      <div class="space-y-3">
+        <label class="block font-label-sm text-label-sm text-on-surface-variant font-semibold">MÉTODO DE PAGO</label>
+        <div class="grid grid-cols-3 gap-3" id="pagoMetodos">
+          <% metodosPago.forEach(m => { %>
+            <button type="button" onclick="seleccionarMetodo(this, <%= m.id %>)"
+              class="flex flex-col items-center gap-1 p-3 rounded-2xl border-2 <%= m.id === 1 ? 'border-primary bg-primary/5 text-primary' : 'border-outline-variant hover:border-primary' %> transition-all">
+              <span><%= m.icono %></span>
+              <span class="font-label-sm text-label-sm"><%= m.nombre %></span>
+            </button>
+          <% }) %>
+        </div>
+        <input type="hidden" name="metodo_pago_id" id="pagoMetodoId" value="1">
+      </div>
+      <div>
+        <label class="block font-label-sm text-label-sm text-on-surface-variant mb-2 font-semibold">FECHA Y HORA</label>
+        <input type="text" id="pagoDateTime"
+          class="w-full bg-surface border border-outline-variant rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary outline-none cursor-pointer"
+          readonly placeholder="Toca para elegir fecha y hora">
+      </div>
+      <div id="pagoError" class="hidden bg-error-container text-on-error-container font-label-sm text-label-sm px-3 py-2 rounded-lg"></div>
+      <div class="flex gap-4 pt-2">
+        <button type="button" onclick="cerrarPagoModal()" class="flex-1 py-4 text-on-surface font-bold rounded-2xl bg-surface-container active:scale-95 transition-all">Cancelar</button>
+        <button type="submit" class="flex-1 py-4 bg-primary text-on-primary font-bold rounded-2xl shadow-xl shadow-primary/20 active:scale-95 transition-all">Pagar Ahora</button>
+      </div>
+    </form>
+  </div>
+</div>
+<script>
+function toggleSemana(content, btn) {
+  const isHidden = content.classList.contains('hidden');
+  content.classList.toggle('hidden');
+  btn.querySelector('span:last-child').textContent = isHidden ? 'expand_less' : 'expand_more';
+}
+function toggleCeder() { document.getElementById('cederForm').classList.toggle('hidden'); }
+function closeModals() {
+  document.getElementById('modalOverlay').classList.add('hidden');
+  document.getElementById('modalGeneral').classList.add('hidden');
+  document.getElementById('paymentModal').classList.add('hidden');
+}
+let dp = null;
+function abrirPagoModal(btn) {
+  const d = btn.dataset;
+  const overlay = document.getElementById('modalOverlay');
+  const modal = document.getElementById('paymentModal');
+  document.getElementById('pagoTurnoId').value = d.turno;
+  document.getElementById('pagoCicloId').value = d.ciclo;
+  document.getElementById('pagoJuntaId').value = d.junta;
+  document.getElementById('pagoMonto').value = d.debe;
+  document.getElementById('pagoMonto').max = d.debe;
+  document.getElementById('modalParticipantName').textContent = d.participante;
+  document.getElementById('modalPaymentContext').textContent = 'Semana ' + d.semana + ' — S/ ' + d.debe;
+  if (d.inteligente === 'true') {
+    document.getElementById('pagoAdvertencia').classList.remove('hidden');
+    document.getElementById('formPago').action = '/pagos/registrar-inteligente';
+  } else {
+    document.getElementById('pagoAdvertencia').classList.add('hidden');
+    document.getElementById('formPago').action = '/pagos/registrar';
+  }
+  if (dp) dp.destroy();
+  dp = new AirDatepicker('#pagoDateTime', {
+    timepicker: true, dateFormat: 'dd/MM/yyyy', timeFormat: 'HH:mm',
+    autoClose: true, position: 'bottom center', minutesStep: 5, startDate: new Date(),
+  });
+  dp.selectDate(new Date());
+  overlay.classList.remove('hidden');
+  modal.classList.remove('hidden');
+  setTimeout(() => {
+    modal.style.pointerEvents = 'auto';
+    modal.style.opacity = '1';
+    modal.querySelector('div').style.transform = 'translateY(0)';
+  }, 10);
+  document.getElementById('pagoError').classList.add('hidden');
+  const firstBtn = document.querySelector('#pagoMetodos button:first-child');
+  if (firstBtn) { firstBtn.click(); }
+}
+function cerrarPagoModal() {
+  const overlay = document.getElementById('modalOverlay');
+  const modal = document.getElementById('paymentModal');
+  overlay.classList.add('hidden');
+  modal.style.pointerEvents = 'none';
+  modal.style.opacity = '0';
+  modal.querySelector('div').style.transform = 'translateY(2rem)';
+  setTimeout(() => modal.classList.add('hidden'), 300);
+  if (dp) { dp.destroy(); dp = null; }
+}
+function seleccionarMetodo(btn, id) {
+  document.querySelectorAll('#pagoMetodos button').forEach(b => {
+    b.classList.remove('border-primary', 'bg-primary/5', 'text-primary');
+    b.classList.add('border-outline-variant');
+  });
+  btn.classList.remove('border-outline-variant');
+  btn.classList.add('border-primary', 'bg-primary/5', 'text-primary');
+  document.getElementById('pagoMetodoId').value = id;
+}
+document.getElementById('formPago')?.addEventListener('submit', function(e) {
+  const errDiv = document.getElementById('pagoError');
+  errDiv.classList.add('hidden');
+  let d;
+  if (dp) {
+    d = dp.selectedDates[0] || new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    const h = String(d.getHours()).padStart(2, '0');
+    const min = String(d.getMinutes()).padStart(2, '0');
+    document.getElementById('pagoFechaCompleta').value = y + '-' + m + '-' + day + ' ' + h + ':' + min + ':00';
+  } else {
+    d = new Date();
+    document.getElementById('pagoFechaCompleta').value = d.toISOString().slice(0, 19).replace('T', ' ');
+  }
+  if (d.getTime() > Date.now()) {
+    errDiv.textContent = 'La fecha del pago no puede ser mayor a la actual.';
+    errDiv.classList.remove('hidden');
+    e.preventDefault();
+  }
+});
+</script>
+<%- include('footer') %>

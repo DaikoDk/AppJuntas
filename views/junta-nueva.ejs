@@ -1,0 +1,225 @@
+<%- include('header') %>
+<% const DEFAULT_TURNOS = 10; %>
+<div class="max-w-2xl mx-auto">
+  <div class="flex items-center gap-3 mb-8">
+    <a href="/juntas" class="flex items-center gap-1 text-primary font-label-md hover:underline">
+      <span class="material-symbols-outlined" style="font-size:18px">arrow_back</span>
+    </a>
+    <h1 class="font-headline-md text-headline-md text-on-surface">Nueva Junta</h1>
+  </div>
+
+  <% if (error === 'sin_participantes') { %>
+  <div class="bg-error-container border border-error-container rounded-xl p-4 flex items-center gap-3 mb-4">
+    <span class="material-symbols-outlined text-error-alert">warning</span>
+    <p class="font-body-md text-body-md text-on-surface-variant">Asigna al menos un participante a cada turno.</p>
+  </div>
+  <% } %>
+
+  <form id="juntaForm" method="POST" action="/juntas/nueva" class="bg-surface-container-lowest rounded-2xl p-8 shadow-sm border border-outline-variant/30 space-y-6">
+
+    <div class="space-y-1">
+      <label class="font-label-md text-label-md text-on-surface-variant ml-1">Nombre de la junta</label>
+      <input type="text" name="nombre" id="formNombre" required class="w-full bg-surface border border-outline-variant rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary outline-none transition-all" placeholder="Ej: Rifa Solidaria">
+    </div>
+
+    <div class="grid grid-cols-2 gap-4">
+      <div class="space-y-1">
+        <label class="font-label-md text-label-md text-on-surface-variant ml-1">Monto de aporte (S/)</label>
+        <input type="number" name="monto_aporte" id="formMonto" step="0.5" min="1" required class="w-full bg-surface border border-outline-variant rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary outline-none transition-all" placeholder="100">
+      </div>
+      <div class="space-y-1">
+        <label class="font-label-md text-label-md text-on-surface-variant ml-1">Frecuencia (días)</label>
+        <input type="number" name="frecuencia_dias" id="formFrecuencia" min="1" value="7" required class="w-full bg-surface border border-outline-variant rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary outline-none transition-all">
+      </div>
+    </div>
+
+    <div class="space-y-1">
+      <label class="font-label-md text-label-md text-on-surface-variant ml-1">Fecha de inicio</label>
+      <input type="date" name="fecha_inicio" id="formFecha" required class="w-full bg-surface border border-outline-variant rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary outline-none transition-all">
+    </div>
+
+    <div class="space-y-3">
+      <div class="flex items-end gap-4">
+        <div class="flex-1 space-y-1">
+          <label class="font-label-md text-label-md text-on-surface-variant ml-1">Cantidad de turnos</label>
+          <input type="number" id="cantidadTurnos" min="2" max="50" value="<%= DEFAULT_TURNOS %>"
+            oninput="ajustarTurnos()"
+            class="w-full bg-surface border border-outline-variant rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary outline-none transition-all">
+        </div>
+        <button type="button" onclick="ajustarTurnos()" class="px-4 py-3 bg-primary/10 text-primary rounded-xl font-label-md hover:bg-primary/20 transition-all flex items-center gap-2">
+          <span class="material-symbols-outlined text-[20px]">refresh</span>
+          Generar
+        </button>
+      </div>
+
+      <div id="turnosContainer" class="space-y-2">
+        <% for (let i = 1; i <= DEFAULT_TURNOS; i++) { %>
+        <div class="turno-row flex items-center gap-3 p-3 rounded-xl bg-surface-container-low hover:bg-surface-container transition-colors">
+          <span class="turno-num w-8 h-8 rounded-full bg-primary text-on-primary flex items-center justify-center font-bold font-label-sm shrink-0"><%= i %></span>
+          <select name="participantes[]" required class="flex-1 bg-surface border border-outline-variant rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary outline-none transition-all">
+            <option value="">Seleccionar participante</option>
+            <% participantes.forEach(p => { %>
+            <option value="<%= p.id %>"><%= p.nombre %></option>
+            <% }) %>
+          </select>
+          <button type="button" class="btn-remove-turno p-2 text-outline hover:text-error hover:bg-error-container/30 rounded-lg transition-all">
+            <span class="material-symbols-outlined text-[20px]">close</span>
+          </button>
+        </div>
+        <% } %>
+      </div>
+    </div>
+
+    <button type="button" onclick="mostrarResumen()" class="w-full py-3.5 bg-primary text-on-primary rounded-xl font-bold shadow-lg shadow-primary/20 hover:bg-primary-container active:scale-95 transition-all">
+      Ver resumen
+    </button>
+  </form>
+</div>
+
+<div class="fixed inset-0 z-[60] hidden" id="resumenModal">
+  <div class="absolute inset-0 bg-on-surface/40 premium-blur" onclick="toggleResumenModal()"></div>
+  <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-lg p-margin-mobile max-h-[90vh] overflow-y-auto">
+    <div class="bg-surface-container-lowest rounded-[2rem] shadow-2xl p-8 space-y-6">
+      <div class="flex justify-between items-center">
+        <h2 class="font-headline-md text-headline-md text-on-surface">Resumen de la junta</h2>
+        <button class="text-outline hover:text-on-surface" onclick="toggleResumenModal()"><span class="material-symbols-outlined">close</span></button>
+      </div>
+
+      <div class="space-y-3">
+        <div class="flex justify-between items-center py-2 border-b border-surface-container-high">
+          <span class="font-label-md text-label-md text-on-surface-variant">Nombre</span>
+          <span class="font-body-md text-body-md text-on-surface font-medium" id="resumenNombre">-</span>
+        </div>
+        <div class="flex justify-between items-center py-2 border-b border-surface-container-high">
+          <span class="font-label-md text-label-md text-on-surface-variant">Monto de aporte</span>
+          <span class="font-body-md text-body-md text-on-surface font-medium" id="resumenMonto">-</span>
+        </div>
+        <div class="flex justify-between items-center py-2 border-b border-surface-container-high">
+          <span class="font-label-md text-label-md text-on-surface-variant">Frecuencia</span>
+          <span class="font-body-md text-body-md text-on-surface font-medium" id="resumenFrecuencia">-</span>
+        </div>
+        <div class="flex justify-between items-center py-2 border-b border-surface-container-high">
+          <span class="font-label-md text-label-md text-on-surface-variant">Fecha de inicio</span>
+          <span class="font-body-md text-body-md text-on-surface font-medium" id="resumenFecha">-</span>
+        </div>
+      </div>
+
+      <div>
+        <h3 class="font-headline-sm text-headline-sm text-on-surface mb-3">Turnos</h3>
+        <div id="resumenTurnos" class="space-y-2"></div>
+      </div>
+
+      <div class="flex gap-3 pt-2">
+        <button type="button" class="flex-1 px-4 py-3 border border-outline-variant text-on-surface font-label-md rounded-xl hover:bg-surface-container transition-colors" onclick="toggleResumenModal()">Cancelar</button>
+        <button type="button" onclick="confirmarCrear()" class="flex-1 px-4 py-3 bg-primary text-on-primary font-label-md rounded-xl shadow-lg shadow-primary/20 hover:bg-primary-container transition-all active:scale-95">Confirmar y crear</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script id="participantesData" type="application/json"><%= JSON.stringify(participantes.map(p => ({ id: p.id, nombre: p.nombre }))) %></script>
+
+<script>
+const participantes = JSON.parse(document.getElementById('participantesData').textContent);
+
+function ajustarTurnos() {
+  const desired = parseInt(document.getElementById('cantidadTurnos').value) || 0;
+  const container = document.getElementById('turnosContainer');
+  const rows = container.querySelectorAll('.turno-row');
+  const current = rows.length;
+
+  if (desired < 2) {
+    container.innerHTML = '<p class="font-body-md text-body-md text-on-surface-variant text-center py-4">Selecciona al menos 2 turnos.</p>';
+    return;
+  }
+
+  if (desired > current) {
+    for (let i = current + 1; i <= desired; i++) {
+      const div = document.createElement('div');
+      div.className = 'turno-row flex items-center gap-3 p-3 rounded-xl bg-surface-container-low hover:bg-surface-container transition-colors';
+      div.innerHTML = `
+        <span class="turno-num w-8 h-8 rounded-full bg-primary text-on-primary flex items-center justify-center font-bold font-label-sm shrink-0">${i}</span>
+        <select name="participantes[]" required class="flex-1 bg-surface border border-outline-variant rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary outline-none transition-all">
+          <option value="">Seleccionar participante</option>
+          ${participantes.map(p => `<option value="${p.id}">${p.nombre}</option>`).join('')}
+        </select>
+        <button type="button" class="btn-remove-turno p-2 text-outline hover:text-error hover:bg-error-container/30 rounded-lg transition-all">
+          <span class="material-symbols-outlined text-[20px]">close</span>
+        </button>
+      `;
+      container.appendChild(div);
+    }
+  } else if (desired < current) {
+    while (container.querySelectorAll('.turno-row').length > desired) {
+      container.removeChild(container.lastElementChild);
+    }
+  }
+
+  renumberTurnos();
+}
+
+function renumberTurnos() {
+  const rows = document.querySelectorAll('.turno-row');
+  rows.forEach((row, i) => {
+    row.querySelector('.turno-num').textContent = i + 1;
+  });
+}
+
+document.getElementById('turnosContainer').addEventListener('click', function(e) {
+  const btn = e.target.closest('.btn-remove-turno');
+  if (!btn) return;
+  const row = btn.closest('.turno-row');
+  const total = document.querySelectorAll('.turno-row').length;
+  if (total <= 2) {
+    alert('Debe haber al menos 2 turnos.');
+    return;
+  }
+  row.remove();
+  renumberTurnos();
+  document.getElementById('cantidadTurnos').value = document.querySelectorAll('.turno-row').length;
+});
+
+function mostrarResumen() {
+  const selects = document.querySelectorAll('select[name="participantes[]"]');
+  let empty = false;
+  selects.forEach(s => { if (!s.value) empty = true; });
+
+  if (empty) {
+    alert('Todos los turnos deben tener un participante asignado.');
+    return;
+  }
+
+  document.getElementById('resumenNombre').textContent = document.getElementById('formNombre').value || '-';
+  document.getElementById('resumenMonto').textContent = 'S/ ' + (document.getElementById('formMonto').value || '0');
+  document.getElementById('resumenFrecuencia').textContent = 'Cada ' + (document.getElementById('formFrecuencia').value || '-') + ' días';
+  document.getElementById('resumenFecha').textContent = document.getElementById('formFecha').value || '-';
+
+  const turnosDiv = document.getElementById('resumenTurnos');
+  turnosDiv.innerHTML = '';
+  selects.forEach((s, i) => {
+    const p = participantes.find(p => String(p.id) === s.value);
+    const div = document.createElement('div');
+    div.className = 'flex items-center gap-3 p-2';
+    div.innerHTML = `
+      <span class="w-7 h-7 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold font-label-sm shrink-0">${i + 1}</span>
+      <span class="font-body-md text-body-md text-on-surface">${p ? p.nombre : '-'}</span>
+    `;
+    turnosDiv.appendChild(div);
+  });
+
+  toggleResumenModal();
+}
+
+function confirmarCrear() {
+  toggleResumenModal();
+  document.getElementById('juntaForm').submit();
+}
+
+function toggleResumenModal() {
+  const modal = document.getElementById('resumenModal');
+  modal.classList.toggle('hidden');
+  document.body.style.overflow = modal.classList.contains('hidden') ? '' : 'hidden';
+}
+</script>
+
+<%- include('footer') %>

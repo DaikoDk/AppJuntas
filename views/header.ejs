@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html class="light" lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Juntas - <%= user ? user.nombre : 'Login' %></title>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <script>
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "primary": "#4648d4",
+            "inverse-primary": "#c0c1ff",
+            "on-primary-container": "#fffbff",
+            "error-alert": "#ef4444",
+            "on-surface": "#0b1c30",
+            "surface-variant": "#d3e4fe",
+            "surface-container-low": "#eff4ff",
+            "secondary": "#49607e",
+            "on-tertiary-container": "#fffbff",
+            "surface-container-high": "#dce9ff",
+            "on-error-container": "#93000a",
+            "on-secondary-fixed-variant": "#314865",
+            "error-container": "#ffdad6",
+            "surface-bright": "#f8f9ff",
+            "surface-dark": "#0f172a",
+            "background": "#f8f9ff",
+            "primary-fixed-dim": "#c0c1ff",
+            "surface-container": "#e5eeff",
+            "on-tertiary-fixed": "#301400",
+            "tertiary-fixed": "#ffdcc5",
+            "tertiary-container": "#b55d00",
+            "surface-container-lowest": "#ffffff",
+            "on-secondary-fixed": "#001c37",
+            "on-error": "#ffffff",
+            "surface": "#f8f9ff",
+            "on-background": "#0b1c30",
+            "secondary-container": "#c4dcff",
+            "primary-fixed": "#e1e0ff",
+            "outline": "#767586",
+            "on-secondary": "#ffffff",
+            "primary-container": "#6063ee",
+            "tertiary-fixed-dim": "#ffb783",
+            "success-payment": "#10b981",
+            "error": "#ba1a1a",
+            "surface-light": "#f8fafc",
+            "secondary-fixed-dim": "#b0c8eb",
+            "surface-dim": "#cbdbf5",
+            "on-surface-variant": "#464554",
+            "secondary-fixed": "#d2e4ff",
+            "on-secondary-container": "#49617f",
+            "surface-container-highest": "#d3e4fe",
+            "on-primary-fixed-variant": "#2f2ebe",
+            "inverse-surface": "#213145",
+            "on-tertiary": "#ffffff",
+            "outline-variant": "#c7c4d7",
+            "inverse-on-surface": "#eaf1ff",
+            "on-tertiary-fixed-variant": "#703700",
+            "tertiary": "#904900",
+            "on-primary-fixed": "#07006c",
+            "warning-debt": "#f59e0b",
+            "surface-tint": "#494bd6",
+            "on-primary": "#ffffff"
+          },
+          borderRadius: {
+            DEFAULT: "0.25rem",
+            lg: "0.5rem",
+            xl: "0.75rem",
+            full: "9999px"
+          },
+          spacing: {
+            "margin-desktop": "48px",
+            "gutter": "24px",
+            "container-max-width": "1280px",
+            "margin-mobile": "16px",
+            "unit": "4px"
+          },
+          fontFamily: {
+            "headline-lg-mobile": ["Geist"],
+            "label-sm": ["Geist"],
+            "body-md": ["Geist"],
+            "headline-lg": ["Geist"],
+            "body-lg": ["Geist"],
+            "label-md": ["Geist"],
+            "headline-md": ["Geist"],
+            "display": ["Geist"]
+          },
+          fontSize: {
+            "headline-lg-mobile": ["28px", { lineHeight: "36px", fontWeight: "600" }],
+            "label-sm": ["12px", { lineHeight: "16px", fontWeight: "600" }],
+            "body-md": ["16px", { lineHeight: "24px", fontWeight: "400" }],
+            "headline-lg": ["32px", { lineHeight: "40px", letterSpacing: "-0.01em", fontWeight: "600" }],
+            "body-lg": ["18px", { lineHeight: "28px", fontWeight: "400" }],
+            "label-md": ["14px", { lineHeight: "20px", letterSpacing: "0.01em", fontWeight: "500" }],
+            "headline-md": ["24px", { lineHeight: "32px", fontWeight: "600" }],
+            "display": ["48px", { lineHeight: "56px", letterSpacing: "-0.02em", fontWeight: "700" }]
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/air-datepicker@3.5.3/air-datepicker.css">
+  <script src="https://cdn.jsdelivr.net/npm/air-datepicker@3.5.3/air-datepicker.js"></script>
+  <link rel="stylesheet" href="/estilos.css?v=<%= Date.now() %>">
+  <link rel="manifest" href="/manifest.json">
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js');
+    }
+  </script>
+  <style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      display: inline-block;
+      vertical-align: middle;
+    }
+    body { font-family: 'Geist', sans-serif; background-color: #f8f9ff; min-height: 100dvh; }
+    .scrollbar-hide::-webkit-scrollbar { display: none; }
+    .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+    .timeline-step-active { box-shadow: 0 0 0 4px rgba(70, 72, 212, 0.15); }
+    .gradient-mesh {
+      background-color: #f8f9ff;
+      background-image: radial-gradient(at 0% 0%, rgba(70, 72, 212, 0.05) 0px, transparent 50%), radial-gradient(at 100% 0%, rgba(16, 185, 129, 0.05) 0px, transparent 50%);
+    }
+    .premium-blur { backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+  </style>
+</head>
+<body class="font-body-md text-on-surface antialiased bg-background">
+<% if (user) { %>
+<header class="bg-surface dark:bg-surface-dark fixed top-0 w-full z-50 shadow-sm dark:shadow-none">
+  <div class="flex items-center justify-between px-margin-mobile md:px-margin-desktop h-16 w-full max-w-container-max-width mx-auto">
+    <div class="flex items-center gap-4">
+      <div class="w-10 h-10 rounded-full bg-primary-container/10 border border-primary/10 flex items-center justify-center text-primary font-bold">
+        <%= (user.nombre || 'U').charAt(0).toUpperCase() %>
+      </div>
+      <a href="/dashboard" class="font-display text-headline-md text-primary dark:text-inverse-primary tracking-tight">Juntas</a>
+    </div>
+    <div class="flex items-center gap-2">
+      <button onclick="document.documentElement.classList.toggle('dark')" class="p-2 rounded-full hover:bg-surface-variant/50 dark:hover:bg-surface-container-high/20 transition-colors active:scale-95">
+        <span class="material-symbols-outlined text-primary dark:text-inverse-primary">dark_mode</span>
+      </button>
+    </div>
+  </div>
+</header>
+<% } %>
+<main class="pt-24 pb-32 px-margin-mobile md:px-margin-desktop max-w-4xl mx-auto">

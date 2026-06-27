@@ -1,0 +1,19 @@
+</main>
+<% if (user) { %>
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 py-2 pb-safe bg-surface-container-lowest dark:bg-surface-dark shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] rounded-t-xl md:hidden">
+  <% const navItems = [
+    { href: '/dashboard', icon: 'home', label: 'Home', active: (currentPath || '') === '/dashboard' || (currentPath || '') === '/' },
+    { href: '/juntas', icon: 'group_work', label: 'Juntas', active: (currentPath || '') === '/juntas' || (currentPath || '').startsWith('/juntas/') },
+    { href: '/participantes', icon: 'contacts', label: 'People', active: (currentPath || '') === '/participantes' },
+    { href: '/alertas', icon: 'notifications_active', label: 'Alerts', active: (currentPath || '') === '/alertas' },
+  ] %>
+  <% navItems.forEach(n => { %>
+    <a href="<%= n.href %>" class="flex flex-col items-center justify-center <%= n.active ? 'text-primary dark:text-inverse-primary bg-primary-container/20 dark:bg-primary-container/10 rounded-xl' : 'text-secondary dark:text-secondary-fixed-dim' %> px-3 py-1 hover:bg-surface-container dark:hover:bg-surface-container-high transition-all active:scale-90 duration-200">
+      <span class="material-symbols-outlined" <%= n.active ? 'style="font-variation-settings: \'FILL\' 1;"' : '' %>><%= n.icon %></span>
+      <span class="font-label-sm text-label-sm"><%= n.label %></span>
+    </a>
+  <% }) %>
+</nav>
+<% } %>
+</body>
+</html>

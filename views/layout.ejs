@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Juntas - <%= user ? user.nombre : 'Login' %></title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="manifest" href="/manifest.json">
+</head>
+<body class="bg-gray-50 font-sans antialiased">
+  <% if (user) { %>
+  <nav class="bg-blue-700 text-white shadow-lg">
+    <div class="max-w-4xl mx-auto px-4">
+      <div class="flex items-center justify-between h-14">
+        <a href="/dashboard" class="text-lg font-bold">💰 Juntas</a>
+        <div class="flex items-center gap-4 text-sm">
+          <a href="/dashboard" class="hover:text-blue-200">Dashboard</a>
+          <a href="/juntas" class="hover:text-blue-200">Juntas</a>
+          <a href="/participantes" class="hover:text-blue-200">Participantes</a>
+          <a href="/alertas" class="hover:text-blue-200 relative">
+            Alertas
+            <span class="absolute -top-2 -right-3 bg-red-500 text-white text-xs rounded-full px-1.5 py-0.5">!</span>
+          </a>
+          <a href="/auth/logout" class="text-blue-200 hover:text-white">Salir</a>
+        </div>
+      </div>
+    </div>
+  </nav>
+  <% } %>
+
+  <main class="max-w-4xl mx-auto px-4 py-6">
+    <%- body %>
+  </main>
+</body>
+</html>

@@ -1,0 +1,26 @@
+:root {
+  --primary: #4648d4;
+  --primary-container: #6063ee;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #ba1a1a;
+  --surface: #f8f9ff;
+  --surface-lowest: #ffffff;
+  --text: #0b1c30;
+  --text-secondary: #464554;
+  --border: #c7c4d7;
+  --radius: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --shadow: 0 1px 3px rgb(0 0 0 / 0.06), 0 1px 2px rgb(0 0 0 / 0.04);
+  --shadow-md: 0 4px 12px rgb(0 0 0 / 0.08);
+  --shadow-lg: 0 8px 24px rgb(0 0 0 / 0.10);
+  --shadow-xl: 0 12px 32px rgb(0 0 0 / 0.12);
+}
+body { font-family: 'Geist', sans-serif; transition: background .3s, color .3s; }
+.progress-bar { height: 100%; border-radius: 99px; background: var(--primary); transition: width .4s ease; }
+.progress-bar-green { background: var(--success); }
+.progress { border-radius: 99px; overflow: hidden; background: #e5eeff; }
+.btn-hover-effect { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
+.btn-hover-effect:active { transform: scale(0.95); }
+.glass-card { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(8px); border: 1px solid rgba(226, 232, 240, 0.5); }

@@ -1,0 +1,63 @@
+<%- include('header') %>
+<section class="flex flex-col gap-2 mb-8">
+  <div class="flex items-end justify-between">
+    <div>
+      <h2 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-surface tracking-tight">Mis Juntas</h2>
+      <p class="text-on-surface-variant font-body-md">Gestiona tus grupos de ahorro.</p>
+    </div>
+    <a href="/juntas/nueva" class="bg-primary text-on-primary px-6 py-2.5 rounded-xl flex items-center gap-2 shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all active:scale-95 group">
+      <span class="material-symbols-outlined text-[20px] transition-transform group-hover:rotate-90">add</span>
+      <span class="font-label-md">Nueva</span>
+    </a>
+  </div>
+</section>
+<% if (juntas.length === 0) { %>
+<section class="mt-12 p-8 border-2 border-dashed border-outline-variant rounded-2xl flex flex-col items-center justify-center text-center">
+  <div class="w-16 h-16 bg-surface-container-high rounded-full flex items-center justify-center mb-4">
+    <span class="material-symbols-outlined text-primary text-[32px]">add_circle</span>
+  </div>
+  <h4 class="font-headline-sm text-headline-sm text-on-surface">No hay juntas</h4>
+  <p class="text-on-surface-variant max-w-xs mt-2 mb-6">Crea tu primera junta.</p>
+  <a href="/juntas/nueva" class="text-primary font-label-md border-b-2 border-primary pb-0.5 hover:opacity-70 transition-opacity">Crear una junta</a>
+</section>
+<% } else { %>
+<section class="space-y-4">
+  <h3 class="font-label-md text-label-md text-outline uppercase tracking-widest px-1">Grupos Activos</h3>
+  <% juntas.forEach(j => { %>
+    <a href="/juntas/<%= j.id %>" class="group bg-surface-container-lowest border border-outline-variant/40 rounded-xl p-5 hover:border-primary/50 transition-all shadow-sm hover:shadow-md cursor-pointer relative block">
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div class="flex items-center gap-4">
+          <div class="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+            <span class="material-symbols-outlined text-[28px]">group_work</span>
+          </div>
+          <div>
+            <h4 class="font-headline-sm text-headline-sm text-on-surface"><%= j.nombre %></h4>
+            <div class="flex items-center gap-2 mt-0.5">
+              <span class="bg-surface-container text-on-secondary-container px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider">Activa</span>
+              <span class="text-on-surface-variant font-label-sm"><%= j.total_turnos %> turnos</span>
+            </div>
+          </div>
+        </div>
+        <div class="grid grid-cols-3 md:flex md:items-center gap-6 md:gap-12">
+          <div class="flex flex-col">
+            <span class="text-[10px] font-bold text-outline uppercase tracking-tighter">Aporte</span>
+            <span class="font-headline-sm text-headline-sm text-primary">S/ <%= j.monto_aporte %></span>
+          </div>
+          <div class="flex flex-col">
+            <span class="text-[10px] font-bold text-outline uppercase tracking-tighter">Pozo Semanal</span>
+            <span class="font-headline-sm text-headline-sm text-on-surface">S/ <%= j.monto_aporte * j.total_turnos %></span>
+          </div>
+          <div class="flex flex-col">
+            <span class="text-[10px] font-bold text-outline uppercase tracking-tighter">Inicio</span>
+            <span class="font-label-md text-label-md text-on-surface-variant"><%= new Date(j.fecha_inicio).toLocaleDateString() %></span>
+          </div>
+        </div>
+        <div class="flex items-center justify-end">
+          <span class="material-symbols-outlined text-outline group-hover:text-primary transition-colors">chevron_right</span>
+        </div>
+      </div>
+    </a>
+  <% }) %>
+</section>
+<% } %>
+<%- include('footer') %>
