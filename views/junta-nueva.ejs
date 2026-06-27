@@ -116,7 +116,7 @@
   </div>
 </div>
 
-<script id="participantesData" type="application/json"><%= JSON.stringify(participantes.map(p => ({ id: p.id, nombre: p.nombre }))) %></script>
+<script id="participantesData" type="application/json"><%- JSON.stringify(participantes.map(p => ({ id: p.id, nombre: p.nombre }))) %></script>
 
 <script>
 const participantes = JSON.parse(document.getElementById('participantesData').textContent);
