@@ -43,10 +43,9 @@
         <div class="flex-1 space-y-1">
           <label class="font-label-md text-label-md text-on-surface-variant ml-1">Cantidad de turnos</label>
           <input type="number" id="cantidadTurnos" min="2" max="50" value="<%= DEFAULT_TURNOS %>"
-            oninput="ajustarTurnos()"
             class="w-full bg-surface border border-outline-variant rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary outline-none transition-all">
         </div>
-        <button type="button" onclick="ajustarTurnos()" class="px-4 py-3 bg-primary/10 text-primary rounded-xl font-label-md hover:bg-primary/20 transition-all flex items-center gap-2">
+        <button type="button" id="btnGenerar" class="px-4 py-3 bg-primary/10 text-primary rounded-xl font-label-md hover:bg-primary/20 transition-all flex items-center gap-2">
           <span class="material-symbols-outlined text-[20px]">refresh</span>
           Generar
         </button>
@@ -70,19 +69,19 @@
       </div>
     </div>
 
-    <button type="button" onclick="mostrarResumen()" class="w-full py-3.5 bg-primary text-on-primary rounded-xl font-bold shadow-lg shadow-primary/20 hover:bg-primary-container active:scale-95 transition-all">
+    <button type="button" id="btnResumen" class="w-full py-3.5 bg-primary text-on-primary rounded-xl font-bold shadow-lg shadow-primary/20 hover:bg-primary-container active:scale-95 transition-all">
       Ver resumen
     </button>
   </form>
 </div>
 
 <div class="fixed inset-0 z-[60] hidden" id="resumenModal">
-  <div class="absolute inset-0 bg-on-surface/40 premium-blur" onclick="toggleResumenModal()"></div>
+  <div class="absolute inset-0 bg-on-surface/40 premium-blur" id="modalOverlay"></div>
   <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-lg p-margin-mobile max-h-[90vh] overflow-y-auto">
     <div class="bg-surface-container-lowest rounded-[2rem] shadow-2xl p-8 space-y-6">
       <div class="flex justify-between items-center">
         <h2 class="font-headline-md text-headline-md text-on-surface">Resumen de la junta</h2>
-        <button class="text-outline hover:text-on-surface" onclick="toggleResumenModal()"><span class="material-symbols-outlined">close</span></button>
+        <button class="text-outline hover:text-on-surface" id="btnCerrarModal"><span class="material-symbols-outlined">close</span></button>
       </div>
 
       <div class="space-y-3">
@@ -110,8 +109,8 @@
       </div>
 
       <div class="flex gap-3 pt-2">
-        <button type="button" class="flex-1 px-4 py-3 border border-outline-variant text-on-surface font-label-md rounded-xl hover:bg-surface-container transition-colors" onclick="toggleResumenModal()">Cancelar</button>
-        <button type="button" onclick="confirmarCrear()" class="flex-1 px-4 py-3 bg-primary text-on-primary font-label-md rounded-xl shadow-lg shadow-primary/20 hover:bg-primary-container transition-all active:scale-95">Confirmar y crear</button>
+        <button type="button" id="btnCancelar" class="flex-1 px-4 py-3 border border-outline-variant text-on-surface font-label-md rounded-xl hover:bg-surface-container transition-colors">Cancelar</button>
+        <button type="button" id="btnConfirmar" class="flex-1 px-4 py-3 bg-primary text-on-primary font-label-md rounded-xl shadow-lg shadow-primary/20 hover:bg-primary-container transition-all active:scale-95">Confirmar y crear</button>
       </div>
     </div>
   </div>
@@ -220,6 +219,18 @@ function toggleResumenModal() {
   modal.classList.toggle('hidden');
   document.body.style.overflow = modal.classList.contains('hidden') ? '' : 'hidden';
 }
+
+document.addEventListener('DOMContentLoaded', function() {
+  const $ = id => document.getElementById(id);
+  ajustarTurnos();
+  $('cantidadTurnos').addEventListener('input', ajustarTurnos);
+  $('btnGenerar').addEventListener('click', ajustarTurnos);
+  $('btnResumen').addEventListener('click', mostrarResumen);
+  $('modalOverlay').addEventListener('click', toggleResumenModal);
+  $('btnCerrarModal').addEventListener('click', toggleResumenModal);
+  $('btnCancelar').addEventListener('click', toggleResumenModal);
+  $('btnConfirmar').addEventListener('click', confirmarCrear);
+});
 </script>
 
 <%- include('footer') %>
