@@ -4,7 +4,7 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const DB_PATH = join(__dirname, '..', 'juntas.db');
+const DB_PATH = process.env.DB_PATH || join(__dirname, '..', 'juntas.db');
 
 let db = null;
 
