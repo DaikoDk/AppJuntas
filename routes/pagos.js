@@ -60,6 +60,55 @@ function verificarCompletadoCiclo(cicloId, juntaId) {
 
   if (todosCompletos) {
     execute('UPDATE ciclos SET completado = 1 WHERE id = ?', [cicloId]);
+
+    const ciclosFuturos = query(`
+      SELECT id, numero FROM ciclos
+      WHERE junta_id = ? AND completado = 0 AND numero > ?
+      ORDER BY numero ASC
+    `, [juntaId, ciclo.numero]);
+
+    if (ciclosFuturos.length > 0) {
+      for (const t of turnosActivos) {
+        const total = queryOne(
+          'SELECT COALESCE(SUM(monto), 0) as total FROM pagos WHERE turno_id = ? AND ciclo_id = ?',
+          [t.id, cicloId]
+        );
+        let exceso = total.total - junta.monto_aporte;
+        if (exceso <= 0) continue;
+
+        for (const cf of ciclosFuturos) {
+          if (exceso <= 0) break;
+          const pagado = queryOne(
+            'SELECT COALESCE(SUM(monto), 0) as total FROM pagos WHERE turno_id = ? AND ciclo_id = ?',
+            [t.id, cf.id]
+          );
+          const deuda = junta.monto_aporte - pagado.total;
+          if (deuda <= 0) continue;
+          const aPagar = Math.min(exceso, deuda);
+          const ahora = new Date().toISOString().slice(0, 19).replace('T', ' ');
+          insert('pagos', {
+            turno_id: t.id,
+            ciclo_id: cf.id,
+            monto: aPagar,
+            metodo_pago_id: 1,
+            fecha_pago: ahora,
+          });
+          insert('historial', {
+            junta_id: juntaId,
+            tipo: 'pago_exceso',
+            turno_id: t.id,
+            ciclo_id: cf.id,
+            monto: aPagar,
+            fecha_pago: ahora,
+            fecha_registro: ahora,
+            participante_id: queryOne('SELECT participante_id FROM turnos WHERE id = ?', [t.id]).participante_id,
+            descripcion: `Exceso S/${aPagar.toFixed(0)} de Semana ${ciclo.numero} → Semana ${cf.numero}`,
+          });
+          exceso -= aPagar;
+        }
+      }
+    }
+
     verificarMetaSemanal(juntaId, cicloId);
   }
 }
