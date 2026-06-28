@@ -1,4 +1,4 @@
-import { getDb, saveDb, query } from './database.js';
+import { getDb, saveDb, query, execute } from './database.js';
 
 export async function initSchema() {
   const db = await getDb();
@@ -129,6 +129,12 @@ export async function initSchema() {
       FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
     );
   `);
+
+  try {
+    execute('ALTER TABLE participantes ADD COLUMN google_id TEXT DEFAULT NULL');
+  } catch (e) {
+    // ya existe
+  }
 
   const histCheck = query('SELECT COUNT(*) as c FROM historial');
   if (histCheck[0].c === 0) {

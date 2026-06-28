@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import passport from 'passport';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
-import { queryOne, insert } from '../db/database.js';
+import { queryOne, insert, execute } from '../db/database.js';
 
 const router = Router();
 
@@ -21,6 +21,20 @@ export function setupAuth(app) {
           foto: profile.photos?.[0]?.value || '',
         });
         user = queryOne('SELECT * FROM usuarios WHERE id = ?', [id]);
+      }
+      // Auto-crear participante desde perfil de Google
+      let p = queryOne('SELECT id, google_id FROM participantes WHERE google_id = ?', [profile.id]);
+      if (!p) {
+        p = queryOne('SELECT id, google_id FROM participantes WHERE usuario_id = ? AND nombre = ?', [user.id, profile.displayName]);
+      }
+      if (!p) {
+        insert('participantes', {
+          usuario_id: user.id,
+          nombre: profile.displayName,
+          google_id: profile.id,
+        });
+      } else if (!p.google_id) {
+        execute('UPDATE participantes SET google_id = ? WHERE id = ?', [profile.id, p.id]);
       }
       done(null, user);
     } catch (err) {
