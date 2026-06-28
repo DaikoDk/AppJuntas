@@ -26,3 +26,6 @@ body { font-family: 'Geist', sans-serif; transition: background .3s, color .3s; 
 .btn-hover-effect { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
 .btn-hover-effect:active { transform: scale(0.95); }
 .glass-card { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(8px); border: 1px solid rgba(226, 232, 240, 0.5); }
+html.dark .glass-card { background: rgba(15, 23, 42, 0.8); border-color: rgba(71, 85, 105, 0.5); }
+html.dark .progress { background: #334155; }
+html.dark .gradient-mesh { background-color: #0f172a; }

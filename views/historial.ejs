@@ -20,7 +20,7 @@
 <div class="space-y-3">
   <% historial.forEach(h => { %>
     <% if (h.tipo === 'pago') { %>
-      <div class="bg-surface-container-lowest border border-success-payment/20 rounded-xl p-4 flex items-center gap-4">
+      <div class="bg-surface-container-lowest border border-success-payment/20 dark:border-transparent dark:bg-success-payment/5 rounded-xl p-4 flex items-center gap-4">
         <div class="w-10 h-10 rounded-full bg-success-payment/10 flex items-center justify-center text-success-payment flex-shrink-0">
           <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">check_circle</span>
         </div>
@@ -34,7 +34,7 @@
         </div>
       </div>
     <% } else if (h.tipo === 'pago_eliminado') { %>
-      <div class="bg-surface-container-lowest border border-error-container rounded-xl p-4 flex items-center gap-4">
+      <div class="bg-surface-container-lowest border border-error-container dark:border-transparent dark:bg-error-container/5 rounded-xl p-4 flex items-center gap-4">
         <div class="w-10 h-10 rounded-full bg-error-container flex items-center justify-center text-error flex-shrink-0">
           <span class="material-symbols-outlined">undo</span>
         </div>
@@ -48,7 +48,7 @@
         </div>
       </div>
     <% } else if (h.tipo === 'cesion') { %>
-      <div class="bg-surface-container-lowest border border-warning-debt/20 rounded-xl p-4 flex items-center gap-4">
+      <div class="bg-surface-container-lowest border border-warning-debt/20 dark:border-transparent dark:bg-warning-debt/5 rounded-xl p-4 flex items-center gap-4">
         <div class="w-10 h-10 rounded-full bg-warning-debt/10 flex items-center justify-center text-warning-debt flex-shrink-0">
           <span class="material-symbols-outlined">swap_horiz</span>
         </div>

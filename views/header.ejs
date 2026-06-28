@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html class="light" lang="es">
+<html lang="es">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -105,13 +105,36 @@
   </script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/air-datepicker@3.5.3/air-datepicker.css">
   <script src="https://cdn.jsdelivr.net/npm/air-datepicker@3.5.3/air-datepicker.js"></script>
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%234648d4'/><text x='50' y='68' text-anchor='middle' font-family='Geist,sans-serif' font-size='60' font-weight='700' fill='white'>J</text></svg>">
   <link rel="stylesheet" href="/estilos.css?v=<%= Date.now() %>">
   <link rel="manifest" href="/manifest.json">
   <script>
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('/sw.js');
     }
+    if (localStorage.getItem('theme') === 'dark' ||
+        (!localStorage.getItem('theme') && matchMedia('(prefers-color-scheme: dark)').matches)) {
+      document.documentElement.classList.add('dark');
+    }
+  </script>
+  <script>
+    const fLink = document.createElement('link');
+    fLink.rel = 'icon';
+    const isDark = document.documentElement.classList.contains('dark');
+    fLink.href = isDark ? '/logo-oscuro.png' : '/logo-claro.png';
+    document.head.appendChild(fLink);
+    new MutationObserver(function() {
+      fLink.href = document.documentElement.classList.contains('dark') ? '/logo-oscuro.png' : '/logo-claro.png';
+    }).observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+  </script>
+  <script>
+    window.toggleTheme = function() {
+      var h = document.documentElement;
+      h.classList.add('theme-transitioning');
+      void h.offsetHeight;
+      h.classList.toggle('dark');
+      localStorage.setItem('theme', h.classList.contains('dark') ? 'dark' : 'light');
+      setTimeout(function() { h.classList.remove('theme-transitioning'); }, 400);
+    };
   </script>
   <style>
     .material-symbols-outlined {
@@ -119,7 +142,7 @@
       display: inline-block;
       vertical-align: middle;
     }
-    body { font-family: 'Geist', sans-serif; background-color: #f8f9ff; min-height: 100dvh; }
+    body { font-family: 'Geist', sans-serif; min-height: 100dvh; }
     .scrollbar-hide::-webkit-scrollbar { display: none; }
     .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
     .timeline-step-active { box-shadow: 0 0 0 4px rgba(70, 72, 212, 0.15); }
@@ -128,9 +151,67 @@
       background-image: radial-gradient(at 0% 0%, rgba(70, 72, 212, 0.05) 0px, transparent 50%), radial-gradient(at 100% 0%, rgba(16, 185, 129, 0.05) 0px, transparent 50%);
     }
     .premium-blur { backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+    html.dark .bg-surface-container-lowest { background-color: #0f172a; }
+    html.dark .bg-surface-container { background-color: #334155; }
+    html.dark .bg-surface { background-color: #1e293b; }
+    html.dark .bg-surface-container-low { background-color: #1e293b; }
+    html.dark .bg-surface-container-high { background-color: #334155; }
+    html.dark .bg-surface-container-highest { background-color: #475569; }
+    html.dark .bg-surface-dim { background-color: #0f172a; }
+    html.dark .bg-surface-light { background-color: #1e293b; }
+    html.dark .bg-surface-variant { background-color: #475569; }
+    html.dark .bg-surface-bright { background-color: #0f172a; }
+    html.dark .text-on-surface { color: #f1f5f9; }
+    html.dark .text-on-surface-variant { color: #cbd5e1; }
+    html.dark .text-primary { color: #c0c1ff; }
+    html.dark .text-outline { color: #94a3b8; }
+    html.dark .text-emerald-700 { color: #6ee7b7; }
+    html.dark .bg-emerald-100 { background-color: #064e3b; }
+    html.dark .text-on-primary { color: #ffffff; }
+    html.dark .text-on-secondary-container { color: #cbd5e1; }
+    html.dark .text-on-error-container { color: #fca5a5; }
+    html.dark .text-error { color: #f87171; }
+    html.dark .text-error-alert { color: #f87171; }
+    html.dark .text-warning-debt { color: #fbbf24; }
+    html.dark .text-success-payment { color: #34d399; }
+    html.dark .border-outline { border-color: #64748b; }
+    html.dark .border-outline-variant { border-color: #475569; }
+    html.dark .border-outline-variant\/10 { border-color: rgba(71, 85, 105, 0.1); }
+    html.dark .border-outline-variant\/20 { border-color: rgba(71, 85, 105, 0.2); }
+    html.dark .border-outline-variant\/30 { border-color: rgba(71, 85, 105, 0.3); }
+    html.dark .border-outline-variant\/40 { border-color: rgba(71, 85, 105, 0.4); }
+    html.dark .border-surface-variant { border-color: #475569; }
+    html.dark .border-surface-container-high { border-color: #334155; }
+    html.dark .border-error-container { border-color: #7f1d1d; }
+    html.dark .border-error-alert { border-color: #f87171; }
+    html.dark .border-primary { border-color: #818cf8; }
+    html.dark .bg-error-container { background-color: #7f1d1d; }
+    html.dark .bg-success-payment { background-color: #065f46; }
+    html.dark .bg-success-payment\/10 { background-color: rgba(6, 95, 70, 0.1); }
+    html.dark .bg-error-container\/10 { background-color: rgba(127, 29, 29, 0.1); }
+    html.dark .bg-warning-debt { background-color: #92400e; }
+    html.dark .bg-warning-debt\/10 { background-color: rgba(251, 191, 36, 0.15); }
+    html.dark .bg-primary\/10 { background-color: rgba(129, 140, 248, 0.1); }
+    html.dark .bg-primary\/5 { background-color: rgba(129, 140, 248, 0.05); }
+    html.dark .bg-primary-container { background-color: #312e81; }
+    html.dark .bg-primary-container\/10 { background-color: rgba(49, 46, 129, 0.1); }
+    html.dark .bg-error-container\/30 { background-color: rgba(127, 29, 29, 0.3); }
+    html.dark .bg-error-container\/50 { background-color: rgba(127, 29, 29, 0.5); }
+    html.dark .hover\:bg-surface-container:hover { background-color: #334155; }
+    html.dark .hover\:bg-surface-container-low:hover { background-color: #1e293b; }
+    html.dark .hover\:text-on-surface:hover { color: #f1f5f9; }
+    html.dark .hover\:bg-surface-variant\/50:hover { background-color: rgba(71, 85, 105, 0.5); }
+    html.dark .hover\:bg-error-container\/50:hover { background-color: rgba(127, 29, 29, 0.5); }
+    html.dark .hover\:bg-error-container\/30:hover { background-color: rgba(127, 29, 29, 0.3); }
+    html.theme-transitioning,
+    html.theme-transitioning *,
+    html.theme-transitioning *::before,
+    html.theme-transitioning *::after {
+      transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease !important;
+    }
   </style>
 </head>
-<body class="font-body-md text-on-surface antialiased bg-background">
+<body class="font-body-md text-on-surface dark:text-inverse-on-surface antialiased bg-background dark:bg-surface-dark">
 <% if (user) { %>
 <header class="bg-surface dark:bg-surface-dark fixed top-0 w-full z-50 shadow-sm dark:shadow-none">
   <div class="flex items-center justify-between px-margin-mobile md:px-margin-desktop h-16 w-full max-w-container-max-width mx-auto">
@@ -139,11 +220,6 @@
         <%= (user.nombre || 'U').charAt(0).toUpperCase() %>
       </div>
       <a href="/dashboard" class="font-display text-headline-md text-primary dark:text-inverse-primary tracking-tight">JuntApp</a>
-    </div>
-    <div class="flex items-center gap-2">
-      <button onclick="document.documentElement.classList.toggle('dark')" class="p-2 rounded-full hover:bg-surface-variant/50 dark:hover:bg-surface-container-high/20 transition-colors active:scale-95">
-        <span class="material-symbols-outlined text-primary dark:text-inverse-primary">dark_mode</span>
-      </button>
     </div>
   </div>
 </header>
@@ -168,4 +244,8 @@
   </div>
 </nav>
 <% } %>
+<button onclick="toggleTheme()" class="fixed top-4 right-4 z-[100] w-10 h-10 rounded-full bg-surface-container-lowest dark:bg-surface-dark border border-outline-variant flex items-center justify-center shadow-lg hover:bg-surface-container-low active:scale-90 transition-all">
+  <span class="material-symbols-outlined text-primary block dark:hidden">dark_mode</span>
+  <span class="material-symbols-outlined text-primary hidden dark:block">light_mode</span>
+</button>
 <main class="<%= user ? 'pt-24 md:pt-36' : '' %> pb-32 px-margin-mobile md:px-margin-desktop max-w-4xl mx-auto">

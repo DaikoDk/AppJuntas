@@ -1,15 +1,14 @@
 <%- include('header') %>
 <!-- Branding -->
 <div class="mb-10 text-center mt-8">
-  <div class="w-16 h-16 rounded-2xl bg-primary flex items-center justify-center mx-auto mb-3 shadow-lg shadow-primary/20">
-    <span class="text-[28px] font-bold text-on-primary">J</span>
-  </div>
-  <h1 class="text-headline-lg font-headline-lg text-primary tracking-tight font-bold">JuntApp</h1>
+  <img src="/logo-claro.png" alt="JuntApp" class="w-24 h-24 mx-auto mb-3 block dark:hidden rounded-2xl">
+  <img src="/logo-oscuro.png" alt="JuntApp" class="w-24 h-24 mx-auto mb-3 hidden dark:block rounded-2xl">
+  <h1 class="text-headline-lg font-headline-lg text-primary dark:text-inverse-primary tracking-tight font-bold">JuntApp</h1>
 </div>
 <!-- Card -->
-<div class="w-full max-w-md bg-surface-container-lowest rounded-xl border border-outline-variant p-8 md:p-10 mx-auto" style="box-shadow: 0 10px 40px -10px rgba(70, 72, 212, 0.1);">
+<div class="w-full max-w-md bg-surface-container-lowest dark:bg-surface-dark rounded-xl border border-outline-variant p-8 md:p-10 mx-auto" style="box-shadow: 0 10px 40px -10px rgba(70, 72, 212, 0.1);">
   <header class="mb-8">
-    <h2 class="text-headline-lg-mobile md:text-headline-lg font-headline-lg text-on-surface mb-2">¡Hola de nuevo!</h2>
+    <h2 class="text-headline-lg-mobile md:text-headline-lg font-headline-lg text-on-surface dark:text-white mb-2">¡Hola de nuevo!</h2>
   </header>
   <!-- Placeholder form (sin funcionalidad real) -->
   <form class="space-y-6" onsubmit="return false;">
@@ -18,7 +17,7 @@
       <div class="relative">
         <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline">mail</span>
         <input type="email" id="email" placeholder="ejemplo@juntapp.com"
-          class="w-full pl-12 pr-4 py-3 bg-surface-light border border-outline-variant rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-body-md font-body-md outline-none">
+          class="w-full pl-12 pr-4 py-3 bg-surface-light dark:bg-surface-dark border border-outline-variant rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-body-md font-body-md outline-none dark:text-white">
       </div>
     </div>
     <div class="space-y-2">
@@ -26,7 +25,7 @@
       <div class="relative">
         <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline">lock</span>
         <input type="password" id="password" placeholder="••••••••"
-          class="w-full pl-12 pr-12 py-3 bg-surface-light border border-outline-variant rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-body-md font-body-md outline-none">
+          class="w-full pl-12 pr-12 py-3 bg-surface-light dark:bg-surface-dark border border-outline-variant rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-body-md font-body-md outline-none dark:text-white">
         <button type="button" onclick="togglePass()" class="absolute right-4 top-1/2 -translate-y-1/2 text-outline hover:text-primary transition-colors">
           <span class="material-symbols-outlined" id="passIcon">visibility</span>
         </button>
@@ -43,12 +42,12 @@
       <div class="w-full border-t border-outline-variant"></div>
     </div>
     <div class="relative flex justify-center text-label-sm font-label-sm">
-      <span class="bg-surface-container-lowest px-4 text-on-surface-variant">O ingresa con</span>
+      <span class="bg-surface-container-lowest dark:bg-surface-dark px-4 text-on-surface-variant dark:text-white">O ingresa con</span>
     </div>
   </div>
   <!-- Google button (funcional) -->
   <a href="/auth/google"
-    class="flex items-center justify-center gap-3 w-full py-3 border border-outline-variant rounded-xl hover:bg-surface-container-low active:scale-[0.97] transition-all font-label-md text-label-md text-on-surface">
+    class="flex items-center justify-center gap-3 w-full py-3 border border-outline-variant rounded-xl hover:bg-surface-container-low active:scale-[0.97] transition-all font-label-md text-label-md text-on-surface dark:text-white">
     <svg height="20" viewBox="0 0 48 48" width="20">
       <path d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" fill="#EA4335"/>
       <path d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z" fill="#4285F4"/>
@@ -58,7 +57,7 @@
     </svg>
     Iniciar sesión con Google
   </a>
-  <p class="mt-10 text-center text-body-md font-body-md text-on-surface-variant">
+  <p class="mt-10 text-center text-body-md font-body-md text-on-surface-variant dark:text-white">
     ¿No tienes una cuenta?
     <span class="text-primary font-bold ml-1 cursor-default">Registrarme</span>
   </p>
