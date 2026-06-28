@@ -104,7 +104,7 @@ router.post('/registrar', (req, res) => {
   const cicloVal = queryOne('SELECT id, junta_id FROM ciclos WHERE id = ?', [ciclo_id]);
   if (!cicloVal) return res.redirect(`/juntas/${junta_id}?error=ciclo_no_existe`);
 
-  const juntaVal = queryOne('SELECT * FROM juntas WHERE id = ?', [junta_id]);
+  const juntaVal = queryOne('SELECT * FROM juntas WHERE id = ? AND usuario_id = ?', [junta_id, req.user.id]);
   if (!juntaVal) return res.redirect(`/juntas/${junta_id}?error=junta_no_existe`);
 
   try {
@@ -196,10 +196,10 @@ router.post('/registrar-inteligente', (req, res) => {
   if (monto === null || monto <= 0) return res.redirect(`/juntas?error=monto_invalido`);
 
   const turno = queryOne('SELECT * FROM turnos WHERE id = ?', [turno_id]);
-  if (!turno) return res.redirect(`/juntas?error=turno_no_existe`);
+  if (!turno) return res.redirect('/juntas?error=turno_no_existe');
 
-  const junta = queryOne('SELECT * FROM juntas WHERE id = ?', [turno.junta_id]);
-  if (!junta) return res.redirect(`/juntas?error=junta_no_existe`);
+  const junta = queryOne('SELECT * FROM juntas WHERE id = ? AND usuario_id = ?', [turno.junta_id, req.user.id]);
+  if (!junta) return res.redirect('/juntas?error=junta_no_existe');
 
   const junta_id = turno.junta_id;
   const fp = safeFecha(fecha_pago);
@@ -277,7 +277,7 @@ router.post('/deshacer', (req, res) => {
     return res.redirect(`/juntas/${junta_id || ''}?error=parametros_invalidos`);
   }
 
-  const juntaDesh = queryOne('SELECT * FROM juntas WHERE id = ?', [junta_id]);
+  const juntaDesh = queryOne('SELECT * FROM juntas WHERE id = ? AND usuario_id = ?', [junta_id, req.user.id]);
   if (!juntaDesh) return res.redirect(`/juntas?error=junta_no_existe`);
 
   const cicloDesh = queryOne('SELECT * FROM ciclos WHERE id = ?', [ciclo_id]);
