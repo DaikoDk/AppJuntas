@@ -60,6 +60,7 @@ export function setupAuth(app) {
       if (err || !user) return res.redirect('/login');
       req.logIn(user, (err) => {
         if (err) return next(err);
+        execute('UPDATE usuarios SET ultimo_acceso = datetime("now", "localtime") WHERE id = ?', [user.id]);
         req.session.save(() => res.redirect('/dashboard'));
       });
     })(req, res, next);

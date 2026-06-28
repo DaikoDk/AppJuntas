@@ -83,6 +83,46 @@
     <p class="font-label-md text-label-md text-primary">Agregar nuevo participante</p>
   </button>
 </div>
+<% if (usuarios) { %>
+<div class="bg-surface-container-lowest rounded-xl border border-outline-variant p-6 mt-8">
+  <div class="flex items-center gap-2 mb-4">
+    <span class="material-symbols-outlined text-primary">admin_panel_settings</span>
+    <h2 class="font-headline-sm text-headline-sm text-on-surface">Usuarios registrados</h2>
+    <span class="ml-auto text-label-sm text-on-surface-variant"><%= usuarios.length %> usuarios</span>
+  </div>
+  <div class="overflow-x-auto">
+    <table class="w-full text-left">
+      <thead>
+        <tr class="border-b border-outline-variant font-label-md text-on-surface-variant">
+          <th class="pb-2 pr-2">Usuario</th>
+          <th class="pb-2 pr-2">Email</th>
+          <th class="pb-2 pr-2">Registro</th>
+          <th class="pb-2 pr-2">Último acceso</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% usuarios.forEach(u => { %>
+        <tr class="border-b border-outline-variant/50 hover:bg-surface-container transition-colors">
+          <td class="py-3 pr-2 flex items-center gap-2">
+            <% if (u.foto) { %>
+              <img src="<%= u.foto %>" class="w-7 h-7 rounded-full" alt="">
+            <% } else { %>
+              <div class="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-primary text-sm font-bold"><%= (u.nombre || '?').charAt(0) %></div>
+            <% } %>
+            <span class="font-label-md text-on-surface"><%= u.nombre %></span>
+          </td>
+          <td class="py-3 pr-2 text-body-md text-on-surface-variant"><%= u.email %></td>
+          <td class="py-3 pr-2 text-body-md text-on-surface-variant"><%= u.creado_en ? u.creado_en.slice(0, 10) : '-' %></td>
+          <td class="py-3 pr-2 text-body-md <%= u.ultimo_acceso ? 'text-on-surface-variant' : 'text-outline' %>">
+            <%= u.ultimo_acceso ? u.ultimo_acceso.slice(0, 19).replace('T', ' ') : 'Nunca' %>
+          </td>
+        </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+</div>
+<% } %>
 <!-- Add Participant Modal -->
 <div class="fixed inset-0 z-[60] hidden" id="addParticipantModal">
   <div class="absolute inset-0 bg-on-surface/40 premium-blur" onclick="toggleModal('addParticipantModal')"></div>

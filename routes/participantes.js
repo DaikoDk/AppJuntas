@@ -8,7 +8,9 @@ router.get('/', (req, res) => {
     'SELECT * FROM participantes WHERE usuario_id = ? AND activo = 1 ORDER BY nombre',
     [req.user.id]
   );
-  res.render('participantes', { user: req.user, participantes, sin_participantes: req.query.sin_participantes === '1', error: req.query.error });
+  const esAdmin = req.user.email === process.env.ADMIN_EMAIL;
+  const usuarios = esAdmin ? query('SELECT id, email, nombre, foto, ultimo_acceso, creado_en FROM usuarios ORDER BY creado_en DESC') : null;
+  res.render('participantes', { user: req.user, participantes, sin_participantes: req.query.sin_participantes === '1', error: req.query.error, usuarios });
 });
 
 router.post('/nuevo', (req, res) => {

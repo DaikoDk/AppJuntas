@@ -137,6 +137,12 @@ export async function initSchema() {
   }
 
   try {
+    execute('ALTER TABLE usuarios ADD COLUMN ultimo_acceso TEXT DEFAULT NULL');
+  } catch (e) {
+    // ya existe
+  }
+
+  try {
     execute('CREATE UNIQUE INDEX IF NOT EXISTS idx_participantes_telefono ON participantes(telefono)');
   } catch (e) {
     // el índice ya existe o hay duplicados
