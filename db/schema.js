@@ -136,6 +136,12 @@ export async function initSchema() {
     // ya existe
   }
 
+  try {
+    execute('CREATE UNIQUE INDEX IF NOT EXISTS idx_participantes_telefono ON participantes(telefono)');
+  } catch (e) {
+    // el índice ya existe o hay duplicados
+  }
+
   const histCheck = query('SELECT COUNT(*) as c FROM historial');
   if (histCheck[0].c === 0) {
     const cesiones = query(`
