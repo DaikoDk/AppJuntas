@@ -91,7 +91,7 @@
     <% const key = t.id + '-' + c.id; %>
     <% const pagosArr = pagosPorTurnoCiclo[key] || []; %>
     <% const total = pagosArr.reduce((s, p) => s + p.monto, 0); %>
-    <% totalRecaudado += total; %>
+    <% totalRecaudado += Math.min(total, junta.monto_aporte); %>
     <% if (total < junta.monto_aporte) participantesConDeuda++; %>
   <% }) %>
   <section class="space-y-4 mb-6">
@@ -109,8 +109,9 @@
         <% const pagosArr = pagosPorTurnoCiclo[key] || []; %>
         <% const totalPagado = pagosArr.reduce((s, p) => s + p.monto, 0); %>
         <% const debe = Math.max(0, junta.monto_aporte - totalPagado); %>
-        <% const completo = totalPagado >= junta.monto_aporte; %>
-        <% let tieneDeudaAnterior = false; %>
+  <% const completo = totalPagado >= junta.monto_aporte; %>
+  <% const exceso = Math.max(0, totalPagado - junta.monto_aporte); %>
+  <% let tieneDeudaAnterior = false; %>
         <% if (idx > 0) { %>
           <% for (let ci = 0; ci < idx; ci++) { %>
             <% const ck = t.id + '-' + ciclos[ci].id; %>
@@ -153,13 +154,13 @@
                   <span class="text-outline"><%= new Date(p.fecha_pago).toLocaleString() %></span>
                 </div>
               <% }) %>
-              <div class="font-label-sm text-label-sm text-on-surface-variant pt-1 border-t border-outline-variant/5">Total: <span class="font-semibold text-on-surface">S/ <%= totalPagado.toFixed(0) %></span> de <span class="text-outline">S/ <%= junta.monto_aporte.toFixed(0) %></span></div>
+              <div class="font-label-sm text-label-sm text-on-surface-variant pt-1 border-t border-outline-variant/5">Total: <span class="font-semibold text-on-surface">S/ <%= (totalPagado - exceso).toFixed(0) %></span> de <span class="text-outline">S/ <%= junta.monto_aporte.toFixed(0) %></span><% if (exceso > 0) { %> · <span class="text-warning-debt">S/ <%= exceso.toFixed(0) %> excede → Semana <%= (ciclos[idx + 1] ? ciclos[idx + 1].numero : '?') %></span><% } %></div>
             </div>
           <% } %>
           <div class="flex justify-between items-end border-t border-outline-variant/10 pt-4">
             <div>
               <p class="font-label-sm text-label-sm text-on-surface-variant"><%= completo ? 'Total Pagado' : (tieneDeudaAnterior ? 'Deuda bloqueada' : 'Deuda pendiente') %></p>
-              <p class="font-headline-md text-headline-md <%= completo ? 'text-success-payment' : 'text-error-alert' %>">S/ <%= completo ? totalPagado.toFixed(0) : debe.toFixed(0) %></p>
+              <p class="font-headline-md text-headline-md <%= completo ? 'text-success-payment' : 'text-error-alert' %>"><% if (exceso > 0) { %>S/ <%= (totalPagado - exceso).toFixed(0) %> <span class="text-label-sm text-on-surface-variant">(+S/<%= exceso.toFixed(0) %> excede)</span><% } else { %>S/ <%= completo ? totalPagado.toFixed(0) : debe.toFixed(0) %><% } %></p>
             </div>
             <div class="flex gap-2">
               <% if (!isPast && !completo) { %>
