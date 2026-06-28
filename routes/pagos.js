@@ -60,55 +60,6 @@ function verificarCompletadoCiclo(cicloId, juntaId) {
 
   if (todosCompletos) {
     execute('UPDATE ciclos SET completado = 1 WHERE id = ?', [cicloId]);
-
-    const ciclosFuturos = query(`
-      SELECT id, numero FROM ciclos
-      WHERE junta_id = ? AND completado = 0 AND numero > ?
-      ORDER BY numero ASC
-    `, [juntaId, ciclo.numero]);
-
-    if (ciclosFuturos.length > 0) {
-      for (const t of turnosActivos) {
-        const total = queryOne(
-          'SELECT COALESCE(SUM(monto), 0) as total FROM pagos WHERE turno_id = ? AND ciclo_id = ?',
-          [t.id, cicloId]
-        );
-        let exceso = total.total - junta.monto_aporte;
-        if (exceso <= 0) continue;
-
-        for (const cf of ciclosFuturos) {
-          if (exceso <= 0) break;
-          const pagado = queryOne(
-            'SELECT COALESCE(SUM(monto), 0) as total FROM pagos WHERE turno_id = ? AND ciclo_id = ?',
-            [t.id, cf.id]
-          );
-          const deuda = junta.monto_aporte - pagado.total;
-          if (deuda <= 0) continue;
-          const aPagar = Math.min(exceso, deuda);
-          const ahora = new Date().toISOString().slice(0, 19).replace('T', ' ');
-          insert('pagos', {
-            turno_id: t.id,
-            ciclo_id: cf.id,
-            monto: aPagar,
-            metodo_pago_id: 1,
-            fecha_pago: ahora,
-          });
-          insert('historial', {
-            junta_id: juntaId,
-            tipo: 'pago_exceso',
-            turno_id: t.id,
-            ciclo_id: cf.id,
-            monto: aPagar,
-            fecha_pago: ahora,
-            fecha_registro: ahora,
-            participante_id: queryOne('SELECT participante_id FROM turnos WHERE id = ?', [t.id]).participante_id,
-            descripcion: `Exceso S/${aPagar.toFixed(0)} de Semana ${ciclo.numero} → Semana ${cf.numero}`,
-          });
-          exceso -= aPagar;
-        }
-      }
-    }
-
     verificarMetaSemanal(juntaId, cicloId);
   }
 }
@@ -140,6 +91,53 @@ router.post('/registrar', (req, res) => {
     pago.fecha_pago,
     pago.fecha_registro
   );
+
+  const juntaReg = queryOne('SELECT * FROM juntas WHERE id = ?', [parseInt(junta_id)]);
+  const cicloReg = queryOne('SELECT * FROM ciclos WHERE id = ?', [parseInt(ciclo_id)]);
+  const totalPagadoReg = queryOne(
+    'SELECT COALESCE(SUM(monto), 0) as total FROM pagos WHERE turno_id = ? AND ciclo_id = ?',
+    [parseInt(turno_id), parseInt(ciclo_id)]
+  ).total;
+
+  if (totalPagadoReg > juntaReg.monto_aporte) {
+    let exceso = totalPagadoReg - juntaReg.monto_aporte;
+    const ciclosFuturos = query(`
+      SELECT id, numero FROM ciclos
+      WHERE junta_id = ? AND completado = 0 AND numero > ?
+      ORDER BY numero ASC
+    `, [juntaReg.id, cicloReg.numero]);
+
+    for (const cf of ciclosFuturos) {
+      if (exceso <= 0) break;
+      const pagadoCf = queryOne(
+        'SELECT COALESCE(SUM(monto), 0) as total FROM pagos WHERE turno_id = ? AND ciclo_id = ?',
+        [parseInt(turno_id), cf.id]
+      ).total;
+      const deudaCf = juntaReg.monto_aporte - pagadoCf;
+      if (deudaCf <= 0) continue;
+      const aPagar = Math.min(exceso, deudaCf);
+      const ahora = new Date().toISOString().slice(0, 19).replace('T', ' ');
+      insert('pagos', {
+        turno_id: parseInt(turno_id),
+        ciclo_id: cf.id,
+        monto: aPagar,
+        metodo_pago_id: parseInt(metodo_pago_id || 1),
+        fecha_pago: ahora,
+      });
+      insert('historial', {
+        junta_id: parseInt(junta_id),
+        tipo: 'pago_exceso',
+        turno_id: parseInt(turno_id),
+        ciclo_id: cf.id,
+        monto: aPagar,
+        fecha_pago: ahora,
+        fecha_registro: ahora,
+        participante_id: queryOne('SELECT participante_id FROM turnos WHERE id = ?', [parseInt(turno_id)]).participante_id,
+        descripcion: `Exceso S/${aPagar.toFixed(0)} de Semana ${cicloReg.numero} → Semana ${cf.numero}`,
+      });
+      exceso -= aPagar;
+    }
+  }
 
   verificarCompletadoCiclo(ciclo_id, junta_id);
   res.redirect(`/juntas/${junta_id}`);
@@ -217,6 +215,11 @@ router.post('/deshacer', (req, res) => {
   `, [turno_id, ciclo_id]);
 
   if (ultimoPago) {
+    const totalAntes = queryOne(
+      'SELECT COALESCE(SUM(monto), 0) as total FROM pagos WHERE turno_id = ? AND ciclo_id = ?',
+      [turno_id, ciclo_id]
+    ).total;
+
     registrarEnHistorial(
       parseInt(junta_id),
       'pago_eliminado',
@@ -228,6 +231,38 @@ router.post('/deshacer', (req, res) => {
       null
     );
     execute('DELETE FROM pagos WHERE id = ?', [ultimoPago.id]);
+
+    const juntaDesh = queryOne('SELECT * FROM juntas WHERE id = ?', [junta_id]);
+    const cicloDesh = queryOne('SELECT * FROM ciclos WHERE id = ?', [ciclo_id]);
+    if (juntaDesh && cicloDesh) {
+      const totalDespues = queryOne(
+        'SELECT COALESCE(SUM(monto), 0) as total FROM pagos WHERE turno_id = ? AND ciclo_id = ?',
+        [turno_id, ciclo_id]
+      ).total;
+      const excesoAntes = Math.max(0, totalAntes - juntaDesh.monto_aporte);
+      const excesoDespues = Math.max(0, totalDespues - juntaDesh.monto_aporte);
+      const excesoPerdido = excesoAntes - excesoDespues;
+
+      if (excesoPerdido > 0) {
+        const excesses = query(`
+          SELECT h.id as h_id, h.ciclo_id, h.monto
+          FROM historial h
+          JOIN ciclos c ON h.ciclo_id = c.id
+          WHERE h.turno_id = ? AND h.tipo = 'pago_exceso' AND c.numero > ? AND c.junta_id = ?
+          ORDER BY c.numero ASC
+        `, [turno_id, cicloDesh.numero, junta_id]);
+
+        let porEliminar = excesoPerdido;
+        for (const ex of excesses) {
+          if (porEliminar <= 0) break;
+          const aEliminar = Math.min(porEliminar, ex.monto);
+          execute('DELETE FROM historial WHERE id = ?', [ex.h_id]);
+          execute('DELETE FROM pagos WHERE turno_id = ? AND ciclo_id = ? AND monto = ?',
+            [turno_id, ex.ciclo_id, aEliminar]);
+          porEliminar -= aEliminar;
+        }
+      }
+    }
   }
 
   execute('UPDATE ciclos SET completado = 0 WHERE id = ?', [ciclo_id]);
