@@ -117,14 +117,42 @@
     }
   </script>
   <script>
-    const fLink = document.createElement('link');
-    fLink.rel = 'icon';
-    const isDark = document.documentElement.classList.contains('dark');
-    fLink.href = isDark ? '/logo-oscuro.png' : '/logo-claro.png';
-    document.head.appendChild(fLink);
-    new MutationObserver(function() {
-      fLink.href = document.documentElement.classList.contains('dark') ? '/logo-oscuro.png' : '/logo-claro.png';
-    }).observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    (function(){
+      var favicon = document.createElement('link');
+      favicon.rel = 'icon';
+      var dark = matchMedia('(prefers-color-scheme: dark)').matches;
+      var src = dark ? '/logo-oscuro.png' : '/logo-claro.png';
+      favicon.href = src;
+      document.head.appendChild(favicon);
+      var img = new Image();
+      img.onload = function() {
+        var c = document.createElement('canvas');
+        c.width = 80; c.height = 80;
+        var ctx = c.getContext('2d');
+        ctx.beginPath();
+        ctx.roundRect(0, 0, 80, 80, 16);
+        ctx.clip();
+        ctx.drawImage(img, 0, 0, 80, 80);
+        favicon.href = c.toDataURL();
+      };
+      img.src = src;
+      matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function(e) {
+        var s = e.matches ? '/logo-oscuro.png' : '/logo-claro.png';
+        favicon.href = s;
+        var i = new Image();
+        i.onload = function() {
+          var c = document.createElement('canvas');
+          c.width = 80; c.height = 80;
+          var ctx = c.getContext('2d');
+          ctx.beginPath();
+          ctx.roundRect(0, 0, 80, 80, 16);
+          ctx.clip();
+          ctx.drawImage(i, 0, 0, 80, 80);
+          favicon.href = c.toDataURL();
+        };
+        i.src = s;
+      });
+    })();
   </script>
   <script>
     window.toggleTheme = function() {
@@ -217,10 +245,9 @@
 <header class="bg-surface dark:bg-surface-dark fixed top-0 w-full z-50 shadow-sm dark:shadow-none">
   <div class="flex items-center justify-between px-margin-mobile md:px-margin-desktop h-16 w-full max-w-container-max-width mx-auto">
     <div class="flex items-center gap-4">
-      <div class="w-10 h-10 rounded-full bg-primary-container/10 border border-primary/10 flex items-center justify-center text-primary font-bold">
-        <%= (user.nombre || 'U').charAt(0).toUpperCase() %>
-      </div>
-      <a href="/dashboard" class="font-display text-headline-md text-primary dark:text-inverse-primary tracking-tight">JuntApp</a>
+      <span class="font-display text-headline-md text-primary dark:text-inverse-primary tracking-tight">JuntApp</span>
+      <span class="inline text-headline-md text-on-surface-variant opacity-30" style="font-weight:100">|</span>
+      <span class="inline text-headline-md text-on-surface-variant"><%= user.nombre %></span>
     </div>
   </div>
 </header>

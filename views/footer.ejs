@@ -31,7 +31,7 @@
   function checkScroll() {
     const main = document.querySelector('main');
     if (!main) return;
-    if (main.offsetHeight <= window.innerHeight + 20) {
+    if (window.innerWidth < 768 || main.offsetHeight <= window.innerHeight + 20) {
       el.style.display = 'none';
       return;
     }
