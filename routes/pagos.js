@@ -225,7 +225,7 @@ router.post('/deshacer', (req, res) => {
       ultimoPago.monto,
       ultimoPago.metodo_pago_id,
       ultimoPago.fecha_pago,
-      ultimoPago.fecha_registro
+      null
     );
     execute('DELETE FROM pagos WHERE id = ?', [ultimoPago.id]);
   }
