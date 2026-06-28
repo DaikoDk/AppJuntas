@@ -70,9 +70,9 @@ app.get('/dashboard', ensureAuth, (req, res) => {
         HAVING COALESCE(SUM(p.monto), 0) >= j.monto_aporte
       )) as pagos_actuales
     FROM juntas j
-    WHERE j.finalizada = 0
+    WHERE j.finalizada = 0 AND j.usuario_id = ?
     ORDER BY j.creado_en DESC
-  `);
+  `, [req.user.id]);
 
   const alertas = query(`
     SELECT p.nombre as participante_nombre, j.nombre as junta_nombre, j.id as junta_id,
@@ -83,11 +83,11 @@ app.get('/dashboard', ensureAuth, (req, res) => {
     JOIN juntas j ON t.junta_id = j.id
     JOIN ciclos c ON c.junta_id = j.id AND c.completado = 0
     LEFT JOIN pagos pg ON pg.turno_id = t.id AND pg.ciclo_id = c.id
-    WHERE t.activo = 1
+    WHERE t.activo = 1 AND j.usuario_id = ?
       AND pg.id IS NULL
       AND datetime(c.fecha_cierre, '+2 days') < datetime('now', 'localtime')
     ORDER BY c.fecha_cierre DESC
-  `);
+  `, [req.user.id]);
 
   res.render('dashboard', { user: req.user, juntas, alertas });
 });
@@ -102,11 +102,11 @@ app.get('/alertas', ensureAuth, (req, res) => {
     JOIN juntas j ON t.junta_id = j.id
     JOIN ciclos c ON c.junta_id = j.id AND c.completado = 0
     LEFT JOIN pagos pg ON pg.turno_id = t.id AND pg.ciclo_id = c.id
-    WHERE t.activo = 1
+    WHERE t.activo = 1 AND j.usuario_id = ?
       AND pg.id IS NULL
       AND datetime(c.fecha_cierre, '+2 days') < datetime('now', 'localtime')
     ORDER BY c.fecha_cierre DESC
-  `);
+  `, [req.user.id]);
   res.render('alertas', { user: req.user, alertas });
 });
 
