@@ -1,0 +1,25 @@
+<%- include('header') %>
+<div class="min-h-[80vh] flex items-center justify-center p-margin-mobile">
+  <div class="max-w-md w-full text-center">
+    <div class="w-20 h-20 rounded-2xl bg-error-container flex items-center justify-center mx-auto mb-6">
+      <span class="material-symbols-outlined text-4xl text-error-alert">block</span>
+    </div>
+    <h1 class="font-headline-lg text-headline-lg text-on-surface mb-3">Acceso denegado</h1>
+    <p class="text-body-lg text-on-surface-variant mb-2">
+      No tienes permiso para usar esta aplicación.
+    </p>
+    <% if (email) { %>
+    <p class="text-body-md text-outline mb-6">
+      Cuenta: <strong><%= email %></strong>
+    </p>
+    <% } %>
+    <p class="text-body-md text-on-surface-variant mb-8">
+      Si crees que esto es un error, contacta al administrador.
+    </p>
+    <a href="/auth/logout" class="inline-flex items-center gap-2 px-6 py-3 bg-primary text-on-primary font-label-md rounded-xl hover:bg-primary-container transition-all active:scale-95">
+      <span class="material-symbols-outlined text-[20px]">logout</span>
+      Cerrar sesión
+    </a>
+  </div>
+</div>
+<%- include('footer') %>

@@ -60,6 +60,13 @@ export function setupAuth(app) {
       if (err || !user) return res.redirect('/login');
       req.logIn(user, (err) => {
         if (err) return next(err);
+        const allowed = (process.env.ALLOWED_EMAILS || '').split(',').map(e => e.trim()).filter(Boolean);
+        if (allowed.length > 0 && !allowed.includes(user.email)) {
+          req.logout(() => {
+            res.render('no-autorizado', { user: null, email: user.email });
+          });
+          return;
+        }
         execute('UPDATE usuarios SET ultimo_acceso = datetime("now", "localtime") WHERE id = ?', [user.id]);
         req.session.save(() => res.redirect('/dashboard'));
       });

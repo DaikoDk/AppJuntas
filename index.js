@@ -2,6 +2,7 @@ import 'dotenv/config';
 process.env.TZ = 'America/Lima';
 import express from 'express';
 import session from 'express-session';
+import rateLimit from 'express-rate-limit';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -18,6 +19,15 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.set('trust proxy', 1);
+
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+app.use(limiter);
+
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(session({
