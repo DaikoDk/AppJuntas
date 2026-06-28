@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Juntas - <%= user ? user.nombre : 'Login' %></title>
+  <title>JuntApp - <%= user ? user.nombre : 'Iniciar Sesión' %></title>
   <link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
@@ -105,6 +105,7 @@
   </script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/air-datepicker@3.5.3/air-datepicker.css">
   <script src="https://cdn.jsdelivr.net/npm/air-datepicker@3.5.3/air-datepicker.js"></script>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💰</text></svg>">
   <link rel="stylesheet" href="/estilos.css?v=<%= Date.now() %>">
   <link rel="manifest" href="/manifest.json">
   <script>
@@ -137,7 +138,7 @@
       <div class="w-10 h-10 rounded-full bg-primary-container/10 border border-primary/10 flex items-center justify-center text-primary font-bold">
         <%= (user.nombre || 'U').charAt(0).toUpperCase() %>
       </div>
-      <a href="/dashboard" class="font-display text-headline-md text-primary dark:text-inverse-primary tracking-tight">Juntas</a>
+      <a href="/dashboard" class="font-display text-headline-md text-primary dark:text-inverse-primary tracking-tight">JuntApp</a>
     </div>
     <div class="flex items-center gap-2">
       <button onclick="document.documentElement.classList.toggle('dark')" class="p-2 rounded-full hover:bg-surface-variant/50 dark:hover:bg-surface-container-high/20 transition-colors active:scale-95">
@@ -167,4 +168,4 @@
   </div>
 </nav>
 <% } %>
-<main class="pt-24 md:pt-36 pb-32 px-margin-mobile md:px-margin-desktop max-w-4xl mx-auto">
+<main class="<%= user ? 'pt-24 md:pt-36' : '' %> pb-32 px-margin-mobile md:px-margin-desktop max-w-4xl mx-auto">
