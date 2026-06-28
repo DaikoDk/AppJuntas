@@ -268,7 +268,7 @@
 </div>
 <% } %>
 <!-- FAB -->
-<button class="fixed bottom-24 left-1/2 -translate-x-1/2 w-14 h-14 bg-primary text-on-primary rounded-full shadow-2xl flex items-center justify-center z-40 active:scale-90 hover:scale-105 transition-all group" onclick="document.getElementById('modalGeneral').classList.remove('hidden')">
+<button class="fixed bottom-24 left-1/2 -translate-x-1/2 w-14 h-14 bg-primary text-on-primary rounded-full shadow-2xl flex items-center justify-center z-40 active:scale-90 hover:scale-105 transition-all group" onclick="abrirModalGeneral()">
   <span class="material-symbols-outlined text-[28px]" style="font-variation-settings: 'FILL' 1;">payments</span>
 </button>
 <!-- Modal Overlay -->
@@ -287,7 +287,7 @@
     </div>
     <div class="space-y-4">
       <% let totalDeudas = 0; let deudoresCount = 0; %>
-      <% ciclos.filter(c => !c.completado).forEach(c => { %>
+      <% ciclos.forEach((c, idx) => { if (c.completado || idx > cicloActualIdx) return; %>
         <% let cicloDeudas = []; %>
         <% turnos.forEach(t => { %>
           <% const key = t.id + '-' + c.id; %>
@@ -301,9 +301,30 @@
             <p class="font-label-sm text-label-sm text-primary font-bold mb-3">Semana <%= c.numero %><%= c.fecha_cierre ? ' — ' + new Date(c.fecha_cierre).toLocaleDateString() : '' %></p>
             <div class="space-y-2">
               <% cicloDeudas.forEach(({ turno: t, debe }) => { %>
-                <div class="flex items-center justify-between py-2 border-b border-outline-variant/10 last:border-0">
-                  <span class="font-body-md text-body-md text-on-surface"><%= t.participante_nombre %></span>
-                  <span class="font-semibold text-error-alert">S/ <%= debe.toFixed(0) %></span>
+                <% let tieneDeudaAnterior = false; %>
+                <% if (c.numero > 1) { %>
+                  <% ciclos.filter(cc => cc.numero < c.numero).forEach(cc => { %>
+                    <% const ck = t.id + '-' + cc.id; %>
+                    <% const pa = pagosPorTurnoCiclo[ck] || []; %>
+                    <% const tp = pa.reduce((s, p) => s + p.monto, 0); %>
+                    <% if (tp < junta.monto_aporte) { tieneDeudaAnterior = true; } %>
+                  <% }) %>
+                <% } %>
+                <div class="flex items-center justify-between py-2 border-b border-outline-variant/10 last:border-0 gap-3">
+                  <div class="min-w-0 flex-1">
+                    <p class="font-body-md text-body-md text-on-surface truncate"><%= t.participante_nombre %></p>
+                    <% if (tieneDeudaAnterior) { %>
+                      <p class="font-label-sm text-label-sm text-warning-debt">Debe ciclo anterior</p>
+                    <% } %>
+                  </div>
+                  <span class="font-semibold text-error-alert flex-shrink-0">S/ <%= debe.toFixed(0) %></span>
+                  <button onclick="var b=this;closeModals();setTimeout(function(){abrirPagoModal(b)},350)"
+                    data-turno="<%= t.id %>" data-ciclo="<%= c.id %>" data-junta="<%= junta.id %>"
+                    data-participante="<%= t.participante_nombre %>" data-debe="<%= debe.toFixed(0) %>"
+                    data-semana="<%= c.numero %>" data-inteligente="<%= tieneDeudaAnterior %>"
+                    class="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-on-primary rounded-xl font-semibold hover:bg-primary/90 active:scale-95 transition-all font-label-sm flex-shrink-0">
+                    <span class="material-symbols-outlined" style="font-size:14px">payments</span> Cobrar
+                  </button>
                 </div>
               <% }) %>
             </div>
@@ -387,9 +408,28 @@ function toggleSemana(content, btn) {
 }
 function toggleCeder() { document.getElementById('cederForm').classList.toggle('hidden'); }
 function closeModals() {
-  document.getElementById('modalOverlay').classList.add('hidden');
-  document.getElementById('modalGeneral').classList.add('hidden');
-  document.getElementById('paymentModal').classList.add('hidden');
+  const overlay = document.getElementById('modalOverlay');
+  const general = document.getElementById('modalGeneral');
+  const payment = document.getElementById('paymentModal');
+  if (general) { general.style.pointerEvents = 'none'; general.style.opacity = '0'; const gb = general.querySelector('div'); if (gb) gb.style.transform = 'translateY(2rem)'; }
+  if (payment) { payment.style.pointerEvents = 'none'; payment.style.opacity = '0'; const pb = payment.querySelector('div'); if (pb) pb.style.transform = 'translateY(2rem)'; }
+  setTimeout(() => {
+    overlay.classList.add('hidden');
+    if (general) general.classList.add('hidden');
+    if (payment) payment.classList.add('hidden');
+  }, 300);
+}
+function abrirModalGeneral() {
+  const overlay = document.getElementById('modalOverlay');
+  const modal = document.getElementById('modalGeneral');
+  const body = document.getElementById('modalGeneralBody');
+  overlay.classList.remove('hidden');
+  modal.classList.remove('hidden');
+  setTimeout(() => {
+    modal.style.pointerEvents = 'auto';
+    modal.style.opacity = '1';
+    body.style.transform = 'translateY(0)';
+  }, 10);
 }
 let dp = null;
 function abrirPagoModal(btn) {

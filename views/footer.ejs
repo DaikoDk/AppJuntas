@@ -1,7 +1,8 @@
 </main>
 <% if (user) { %>
-<div id="deslizaIndicator" class="hidden md:flex fixed bottom-28 left-1/2 -translate-x-1/2 z-50 items-center gap-2 px-5 py-2.5 bg-primary text-on-primary rounded-full shadow-xl cursor-pointer hover:bg-primary/90 active:scale-95 transition-all font-label-md" onclick="irAlFinal()">
-  <span class="material-symbols-outlined text-[18px]">expand_more</span> Desliza
+<div id="deslizaIndicator" class="fixed bottom-20 right-4 z-50 items-center gap-2 px-5 py-2.5 bg-primary text-on-primary rounded-full shadow-xl cursor-pointer hover:bg-primary/90 active:scale-95 transition-all font-label-md" style="display:none" onclick="irAlFinal()">
+  <span class="material-symbols-outlined text-[18px]">expand_more</span>
+  <span id="deslizaText">Desliza</span>
 </div>
 <nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 py-2 pb-safe bg-surface-container-lowest dark:bg-surface-dark shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] rounded-t-xl md:hidden">
   <% const navItems = [
@@ -22,22 +23,36 @@
 (function(){
   const el = document.getElementById('deslizaIndicator');
   if (!el) return;
+  const icon = el.querySelector('.material-symbols-outlined');
+  const text = document.getElementById('deslizaText');
+  function isAtBottom() {
+    return window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 10;
+  }
   function checkScroll() {
-    if (document.documentElement.scrollHeight > document.documentElement.clientHeight) {
-      el.classList.remove('hidden');
+    const main = document.querySelector('main');
+    if (!main) return;
+    if (main.offsetHeight <= window.innerHeight + 20) {
+      el.style.display = 'none';
+      return;
+    }
+    el.style.display = 'flex';
+    if (isAtBottom()) {
+      icon.textContent = 'expand_less';
+      text.textContent = 'Subir';
     } else {
-      el.classList.add('hidden');
+      icon.textContent = 'expand_more';
+      text.textContent = 'Desliza';
     }
   }
   window.irAlFinal = function() {
-    window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'smooth' });
-    el.classList.add('hidden');
-  };
-  window.addEventListener('scroll', function() {
-    if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 10) {
-      el.classList.add('hidden');
+    if (isAtBottom()) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'smooth' });
     }
-  });
+  };
+  window.addEventListener('scroll', checkScroll);
+  window.addEventListener('load', checkScroll);
   checkScroll();
   window.addEventListener('resize', checkScroll);
 })();
