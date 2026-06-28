@@ -17,6 +17,7 @@
   --shadow-lg: 0 8px 24px rgb(0 0 0 / 0.10);
   --shadow-xl: 0 12px 32px rgb(0 0 0 / 0.12);
 }
+html { overflow-y: scroll; }
 body { font-family: 'Geist', sans-serif; transition: background .3s, color .3s; }
 .progress-bar { height: 100%; border-radius: 99px; background: var(--primary); transition: width .4s ease; }
 .progress-bar-green { background: var(--success); }
