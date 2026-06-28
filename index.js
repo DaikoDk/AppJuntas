@@ -1,4 +1,5 @@
 import 'dotenv/config';
+process.env.TZ = 'America/Lima';
 import express from 'express';
 import session from 'express-session';
 import { join, dirname } from 'node:path';
