@@ -146,5 +146,25 @@
     </div>
   </div>
 </header>
+<nav class="hidden md:flex fixed top-16 left-0 w-full z-40 bg-surface/80 dark:bg-surface-dark/80 premium-blur border-b border-outline-variant/20">
+  <div class="flex items-center justify-around max-w-3xl mx-auto px-margin-desktop py-1.5 w-full">
+    <a href="/dashboard" class="flex flex-col items-center gap-0.5 px-6 py-2 rounded-xl transition-all font-label-sm text-label-sm <%= (currentPath || '') === '/dashboard' || (currentPath || '') === '/' ? 'bg-primary/10 text-primary' : 'text-on-surface-variant hover:bg-surface-container hover:text-on-surface' %>">
+      <span class="material-symbols-outlined" <%= (currentPath || '') === '/dashboard' || (currentPath || '') === '/' ? 'style="font-variation-settings: \'FILL\' 1;"' : '' %>>home</span>
+      Dashboard
+    </a>
+    <a href="/juntas" class="flex flex-col items-center gap-0.5 px-6 py-2 rounded-xl transition-all font-label-sm text-label-sm <%= (currentPath || '') === '/juntas' || (currentPath || '').startsWith('/juntas/') ? 'bg-primary/10 text-primary' : 'text-on-surface-variant hover:bg-surface-container hover:text-on-surface' %>">
+      <span class="material-symbols-outlined" <%= (currentPath || '') === '/juntas' || (currentPath || '').startsWith('/juntas/') ? 'style="font-variation-settings: \'FILL\' 1;"' : '' %>>group_work</span>
+      Juntas
+    </a>
+    <a href="/participantes" class="flex flex-col items-center gap-0.5 px-6 py-2 rounded-xl transition-all font-label-sm text-label-sm <%= (currentPath || '') === '/participantes' ? 'bg-primary/10 text-primary' : 'text-on-surface-variant hover:bg-surface-container hover:text-on-surface' %>">
+      <span class="material-symbols-outlined" <%= (currentPath || '') === '/participantes' ? 'style="font-variation-settings: \'FILL\' 1;"' : '' %>>contacts</span>
+      Participantes
+    </a>
+    <a href="/alertas" class="flex flex-col items-center gap-0.5 px-6 py-2 rounded-xl transition-all font-label-sm text-label-sm <%= (currentPath || '') === '/alertas' ? 'bg-primary/10 text-primary' : 'text-on-surface-variant hover:bg-surface-container hover:text-on-surface' %>">
+      <span class="material-symbols-outlined" <%= (currentPath || '') === '/alertas' ? 'style="font-variation-settings: \'FILL\' 1;"' : '' %>>notifications_active</span>
+      Alertas
+    </a>
+  </div>
+</nav>
 <% } %>
-<main class="pt-24 pb-32 px-margin-mobile md:px-margin-desktop max-w-4xl mx-auto">
+<main class="pt-32 pb-32 px-margin-mobile md:px-margin-desktop max-w-4xl mx-auto">
