@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { query, insert, execute } from '../db/database.js';
+import { query, queryOne, insert, execute } from '../db/database.js';
 
 export const router = Router();
 
@@ -13,23 +13,37 @@ router.get('/', (req, res) => {
 
 router.post('/nuevo', (req, res) => {
   const { nombre, telefono } = req.body;
-  insert('participantes', { usuario_id: req.user.id, nombre, telefono: telefono || '' });
+  if (!nombre || nombre.trim().length === 0) {
+    return res.redirect('/participantes?error=nombre_vacio');
+  }
+  insert('participantes', { usuario_id: req.user.id, nombre: nombre.trim(), telefono: telefono || '' });
   res.redirect('/participantes');
 });
 
 router.post('/editar/:id', (req, res) => {
+  const id = parseInt(req.params.id);
+  if (isNaN(id) || id < 1) return res.redirect('/participantes?error=id_invalido');
   const { nombre, telefono } = req.body;
+  if (!nombre || nombre.trim().length === 0) {
+    return res.redirect('/participantes?error=nombre_vacio');
+  }
+  const existente = queryOne('SELECT id FROM participantes WHERE id = ? AND usuario_id = ?', [id, req.user.id]);
+  if (!existente) return res.redirect('/participantes?error=no_encontrado');
   execute(
     'UPDATE participantes SET nombre = ?, telefono = ? WHERE id = ? AND usuario_id = ?',
-    [nombre, telefono || '', req.params.id, req.user.id]
+    [nombre.trim(), telefono || '', id, req.user.id]
   );
   res.redirect('/participantes');
 });
 
 router.post('/eliminar/:id', (req, res) => {
+  const id = parseInt(req.params.id);
+  if (isNaN(id) || id < 1) return res.redirect('/participantes?error=id_invalido');
+  const existente = queryOne('SELECT id FROM participantes WHERE id = ? AND usuario_id = ?', [id, req.user.id]);
+  if (!existente) return res.redirect('/participantes?error=no_encontrado');
   execute(
     'UPDATE participantes SET activo = 0 WHERE id = ? AND usuario_id = ?',
-    [req.params.id, req.user.id]
+    [id, req.user.id]
   );
   res.redirect('/participantes');
 });

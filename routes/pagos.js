@@ -1,8 +1,23 @@
 import { Router } from 'express';
-import { query, queryOne, insert, execute } from '../db/database.js';
+import { query, queryOne, insert, execute, transaction } from '../db/database.js';
 import { verificarMetaSemanal } from '../services/notificaciones.js';
 
 export const router = Router();
+
+function safeId(val) {
+  const n = parseInt(val);
+  return isNaN(n) || n < 1 ? null : n;
+}
+
+function safeFloat(val) {
+  const n = parseFloat(val);
+  return isNaN(n) || n < 0 ? null : n;
+}
+
+function safeFecha(val) {
+  if (!val) return new Date().toISOString().slice(0, 19).replace('T', ' ');
+  return val;
+}
 
 function registrarEnHistorial(juntaId, tipo, turnoId, cicloId, monto, metodoPagoId, fechaPago, fechaRegistro) {
   const turno = queryOne('SELECT participante_id FROM turnos WHERE id = ?', [turnoId]);
@@ -10,14 +25,15 @@ function registrarEnHistorial(juntaId, tipo, turnoId, cicloId, monto, metodoPago
   if (!turno || !junta) return;
 
   let descripcion = '';
+  const montoNum = safeFloat(monto) || 0;
   const metodo = metodoPagoId ? queryOne('SELECT nombre, icono FROM metodos_pago WHERE id = ?', [metodoPagoId]) : null;
 
   if (tipo === 'pago') {
     const ciclo = queryOne('SELECT numero FROM ciclos WHERE id = ?', [cicloId]);
-    descripcion = `Pagó S/${monto.toFixed(0)} a Semana ${ciclo ? ciclo.numero : '?'} ${metodo ? 'vía ' + metodo.icono + metodo.nombre : ''}`;
+    descripcion = `Pagó S/${montoNum.toFixed(0)} a Semana ${ciclo ? ciclo.numero : '?'} ${metodo ? 'vía ' + metodo.icono + metodo.nombre : ''}`;
   } else if (tipo === 'pago_eliminado') {
     const ciclo = queryOne('SELECT numero FROM ciclos WHERE id = ?', [cicloId]);
-    descripcion = `Deshizo pago de S/${monto.toFixed(0)} a Semana ${ciclo ? ciclo.numero : '?'} ${metodo ? '(era ' + metodo.icono + metodo.nombre + ')' : ''}`;
+    descripcion = `Deshizo pago de S/${montoNum.toFixed(0)} a Semana ${ciclo ? ciclo.numero : '?'} ${metodo ? '(era ' + metodo.icono + metodo.nombre + ')' : ''}`;
   }
 
   insert('historial', {
@@ -26,7 +42,7 @@ function registrarEnHistorial(juntaId, tipo, turnoId, cicloId, monto, metodoPago
     turno_id: turnoId,
     ciclo_id: cicloId,
     participante_id: turno.participante_id,
-    monto,
+    monto: montoNum,
     metodo_pago_id: metodoPagoId || null,
     fecha_pago: fechaPago || null,
     fecha_registro: fechaRegistro || null,
@@ -65,99 +81,130 @@ function verificarCompletadoCiclo(cicloId, juntaId) {
 }
 
 router.post('/registrar', (req, res) => {
-  const { turno_id, ciclo_id, junta_id, monto, metodo_pago_id, fecha_pago } = req.body;
+  const turno_id = safeId(req.body.turno_id);
+  const ciclo_id = safeId(req.body.ciclo_id);
+  const junta_id = safeId(req.body.junta_id);
+  const monto = safeFloat(req.body.monto);
+  const metodo_pago_id = safeId(req.body.metodo_pago_id) || 1;
+  const fecha_pago = safeFecha(req.body.fecha_pago);
 
-  const fp = fecha_pago || new Date().toISOString().slice(0, 19).replace('T', ' ');
-  if (new Date(fp) > new Date()) {
+  if (!turno_id || !ciclo_id || !junta_id) {
+    return res.redirect(`/juntas/${junta_id || ''}?error=parametros_invalidos`);
+  }
+  if (monto === null || monto <= 0) {
+    return res.redirect(`/juntas/${junta_id}?error=monto_invalido`);
+  }
+  if (new Date(fecha_pago) > new Date()) {
     return res.redirect(`/juntas/${junta_id}?error=fecha_futura`);
   }
 
-  const pagoId = insert('pagos', {
-    turno_id: parseInt(turno_id),
-    ciclo_id: parseInt(ciclo_id),
-    monto: parseFloat(monto),
-    metodo_pago_id: parseInt(metodo_pago_id || 1),
-    fecha_pago: fp,
-  });
+  const turnoVal = queryOne('SELECT id, junta_id, participante_id FROM turnos WHERE id = ?', [turno_id]);
+  if (!turnoVal) return res.redirect(`/juntas/${junta_id}?error=turno_no_existe`);
 
-  const pago = queryOne('SELECT * FROM pagos WHERE id = ?', [pagoId]);
-  registrarEnHistorial(
-    parseInt(junta_id),
-    'pago',
-    parseInt(turno_id),
-    parseInt(ciclo_id),
-    parseFloat(monto),
-    parseInt(metodo_pago_id || 1),
-    pago.fecha_pago,
-    pago.fecha_registro
-  );
+  const cicloVal = queryOne('SELECT id, junta_id FROM ciclos WHERE id = ?', [ciclo_id]);
+  if (!cicloVal) return res.redirect(`/juntas/${junta_id}?error=ciclo_no_existe`);
 
-  const juntaReg = queryOne('SELECT * FROM juntas WHERE id = ?', [parseInt(junta_id)]);
-  const cicloReg = queryOne('SELECT * FROM ciclos WHERE id = ?', [parseInt(ciclo_id)]);
-  const totalPagadoReg = queryOne(
-    'SELECT COALESCE(SUM(monto), 0) as total FROM pagos WHERE turno_id = ? AND ciclo_id = ?',
-    [parseInt(turno_id), parseInt(ciclo_id)]
-  ).total;
+  const juntaVal = queryOne('SELECT * FROM juntas WHERE id = ?', [junta_id]);
+  if (!juntaVal) return res.redirect(`/juntas/${junta_id}?error=junta_no_existe`);
 
-  if (totalPagadoReg > juntaReg.monto_aporte) {
-    let exceso = totalPagadoReg - juntaReg.monto_aporte;
-    const ciclosFuturos = query(`
-      SELECT id, numero FROM ciclos
-      WHERE junta_id = ? AND completado = 0 AND numero > ?
-      ORDER BY numero ASC
-    `, [juntaReg.id, cicloReg.numero]);
+  try {
+    transaction(() => {
+      const pagoId = insert('pagos', {
+        turno_id,
+        ciclo_id,
+        monto,
+        metodo_pago_id,
+        fecha_pago,
+      });
 
-    for (const cf of ciclosFuturos) {
-      if (exceso <= 0) break;
-      const pagadoCf = queryOne(
+      const pago = queryOne('SELECT * FROM pagos WHERE id = ?', [pagoId]);
+      if (!pago) throw new Error('No se pudo crear el pago');
+
+      registrarEnHistorial(
+        junta_id,
+        'pago',
+        turno_id,
+        ciclo_id,
+        monto,
+        metodo_pago_id,
+        pago.fecha_pago,
+        pago.fecha_registro
+      );
+
+      const totalPagadoReg = queryOne(
         'SELECT COALESCE(SUM(monto), 0) as total FROM pagos WHERE turno_id = ? AND ciclo_id = ?',
-        [parseInt(turno_id), cf.id]
+        [turno_id, ciclo_id]
       ).total;
-      const deudaCf = juntaReg.monto_aporte - pagadoCf;
-      if (deudaCf <= 0) continue;
-      const aPagar = Math.min(exceso, deudaCf);
-      const ahora = new Date().toISOString().slice(0, 19).replace('T', ' ');
-      insert('pagos', {
-        turno_id: parseInt(turno_id),
-        ciclo_id: cf.id,
-        monto: aPagar,
-        metodo_pago_id: parseInt(metodo_pago_id || 1),
-        fecha_pago: ahora,
-      });
-      insert('historial', {
-        junta_id: parseInt(junta_id),
-        tipo: 'pago_exceso',
-        turno_id: parseInt(turno_id),
-        ciclo_id: cf.id,
-        monto: aPagar,
-        fecha_pago: ahora,
-        fecha_registro: ahora,
-        participante_id: queryOne('SELECT participante_id FROM turnos WHERE id = ?', [parseInt(turno_id)]).participante_id,
-        descripcion: `Exceso S/${aPagar.toFixed(0)} de Semana ${cicloReg.numero} → Semana ${cf.numero}`,
-      });
-      exceso -= aPagar;
-    }
-  }
 
-  verificarCompletadoCiclo(ciclo_id, junta_id);
-  res.redirect(`/juntas/${junta_id}`);
+      if (totalPagadoReg > juntaVal.monto_aporte) {
+        let exceso = totalPagadoReg - juntaVal.monto_aporte;
+        const ciclosFuturos = query(`
+          SELECT id, numero FROM ciclos
+          WHERE junta_id = ? AND completado = 0 AND numero > ?
+          ORDER BY numero ASC
+        `, [juntaVal.id, cicloVal.numero]);
+
+        for (const cf of ciclosFuturos) {
+          if (exceso <= 0) break;
+          const pagadoCf = queryOne(
+            'SELECT COALESCE(SUM(monto), 0) as total FROM pagos WHERE turno_id = ? AND ciclo_id = ?',
+            [turno_id, cf.id]
+          ).total;
+          const deudaCf = juntaVal.monto_aporte - pagadoCf;
+          if (deudaCf <= 0) continue;
+          const aPagar = Math.min(exceso, deudaCf);
+          const ahora = new Date().toISOString().slice(0, 19).replace('T', ' ');
+          insert('pagos', {
+            turno_id,
+            ciclo_id: cf.id,
+            monto: aPagar,
+            metodo_pago_id,
+            fecha_pago: ahora,
+          });
+          insert('historial', {
+            junta_id,
+            tipo: 'pago_exceso',
+            turno_id,
+            ciclo_id: cf.id,
+            monto: aPagar,
+            fecha_pago: ahora,
+            fecha_registro: ahora,
+            participante_id: turnoVal.participante_id,
+            descripcion: `Exceso S/${aPagar.toFixed(0)} de Semana ${cicloVal.numero} → Semana ${cf.numero}`,
+          });
+          exceso -= aPagar;
+        }
+      }
+    });
+
+    verificarCompletadoCiclo(ciclo_id, junta_id);
+    return res.redirect(`/juntas/${junta_id}`);
+  } catch (e) {
+    console.error('Error en /registrar:', e);
+    return res.redirect(`/juntas/${junta_id}?error=error_general`);
+  }
 });
 
 router.post('/registrar-inteligente', (req, res) => {
-  let { turno_id, junta_id, monto, metodo_pago_id, fecha_pago } = req.body;
-  monto = parseFloat(monto);
-  metodo_pago_id = parseInt(metodo_pago_id || 1);
+  let { turno_id, monto, metodo_pago_id, fecha_pago } = req.body;
+
+  turno_id = safeId(turno_id);
+  monto = safeFloat(monto);
+  metodo_pago_id = safeId(metodo_pago_id) || 1;
+
+  if (!turno_id) return res.redirect(`/juntas?error=parametros_invalidos`);
+  if (monto === null || monto <= 0) return res.redirect(`/juntas?error=monto_invalido`);
 
   const turno = queryOne('SELECT * FROM turnos WHERE id = ?', [turno_id]);
-  if (!turno) return res.redirect(`/juntas/${junta_id}`);
+  if (!turno) return res.redirect(`/juntas?error=turno_no_existe`);
 
   const junta = queryOne('SELECT * FROM juntas WHERE id = ?', [turno.junta_id]);
-  if (!junta) return res.redirect(`/juntas/${turno.junta_id}`);
+  if (!junta) return res.redirect(`/juntas?error=junta_no_existe`);
 
-  junta_id = turno.junta_id;
-  fecha_pago = fecha_pago || new Date().toISOString().slice(0, 19).replace('T', ' ');
+  const junta_id = turno.junta_id;
+  const fp = safeFecha(fecha_pago);
 
-  if (new Date(fecha_pago) > new Date()) {
+  if (new Date(fp) > new Date()) {
     return res.redirect(`/juntas/${junta_id}?error=fecha_futura`);
   }
 
@@ -171,42 +218,70 @@ router.post('/registrar-inteligente', (req, res) => {
     ORDER BY c.numero ASC
   `, [turno.id, junta.id, junta.monto_aporte]);
 
-  let restante = monto;
-
-  for (const ciclo of ciclosConDeuda) {
-    if (restante <= 0) break;
-    const deuda = junta.monto_aporte - ciclo.total_pagado;
-    const aPagar = Math.min(restante, deuda);
-
-    const pagoId = insert('pagos', {
-      turno_id: turno.id,
-      ciclo_id: ciclo.id,
-      monto: aPagar,
-      metodo_pago_id,
-      fecha_pago,
-    });
-
-    const pago = queryOne('SELECT * FROM pagos WHERE id = ?', [pagoId]);
-    registrarEnHistorial(
-      junta_id,
-      'pago',
-      turno.id,
-      ciclo.id,
-      aPagar,
-      metodo_pago_id,
-      pago.fecha_pago,
-      pago.fecha_registro
-    );
-
-    restante -= aPagar;
-    verificarCompletadoCiclo(ciclo.id, junta.id);
+  if (ciclosConDeuda.length === 0) {
+    return res.redirect(`/juntas/${junta_id}?error=sin_deuda`);
   }
 
-  res.redirect(`/juntas/${junta_id}`);
+  try {
+    transaction(() => {
+      let restante = monto;
+
+      for (const ciclo of ciclosConDeuda) {
+        if (restante <= 0) break;
+        const deuda = junta.monto_aporte - ciclo.total_pagado;
+        const aPagar = Math.min(restante, deuda);
+
+        const pagoId = insert('pagos', {
+          turno_id: turno.id,
+          ciclo_id: ciclo.id,
+          monto: aPagar,
+          metodo_pago_id,
+          fecha_pago: fp,
+        });
+
+        const pago = queryOne('SELECT * FROM pagos WHERE id = ?', [pagoId]);
+        if (!pago) throw new Error('No se pudo crear el pago');
+
+        registrarEnHistorial(
+          junta_id,
+          'pago',
+          turno.id,
+          ciclo.id,
+          aPagar,
+          metodo_pago_id,
+          pago.fecha_pago,
+          pago.fecha_registro
+        );
+
+        restante -= aPagar;
+      }
+    });
+
+    for (const ciclo of ciclosConDeuda) {
+      verificarCompletadoCiclo(ciclo.id, junta.id);
+    }
+
+    return res.redirect(`/juntas/${junta_id}`);
+  } catch (e) {
+    console.error('Error en /registrar-inteligente:', e);
+    return res.redirect(`/juntas/${junta_id}?error=error_general`);
+  }
 });
 
 router.post('/deshacer', (req, res) => {
-  const { turno_id, ciclo_id, junta_id } = req.body;
+  const turno_id = safeId(req.body.turno_id);
+  const ciclo_id = safeId(req.body.ciclo_id);
+  const junta_id = safeId(req.body.junta_id);
+
+  if (!turno_id || !ciclo_id || !junta_id) {
+    return res.redirect(`/juntas/${junta_id || ''}?error=parametros_invalidos`);
+  }
+
+  const juntaDesh = queryOne('SELECT * FROM juntas WHERE id = ?', [junta_id]);
+  if (!juntaDesh) return res.redirect(`/juntas?error=junta_no_existe`);
+
+  const cicloDesh = queryOne('SELECT * FROM ciclos WHERE id = ?', [ciclo_id]);
+  if (!cicloDesh) return res.redirect(`/juntas/${junta_id}?error=ciclo_no_existe`);
 
   const ultimoPago = queryOne(`
     SELECT * FROM pagos
@@ -214,27 +289,29 @@ router.post('/deshacer', (req, res) => {
     ORDER BY id DESC LIMIT 1
   `, [turno_id, ciclo_id]);
 
-  if (ultimoPago) {
-    const totalAntes = queryOne(
-      'SELECT COALESCE(SUM(monto), 0) as total FROM pagos WHERE turno_id = ? AND ciclo_id = ?',
-      [turno_id, ciclo_id]
-    ).total;
+  if (!ultimoPago) {
+    return res.redirect(`/juntas/${junta_id}?error=sin_pago`);
+  }
 
-    registrarEnHistorial(
-      parseInt(junta_id),
-      'pago_eliminado',
-      parseInt(turno_id),
-      parseInt(ciclo_id),
-      ultimoPago.monto,
-      ultimoPago.metodo_pago_id,
-      ultimoPago.fecha_pago,
-      null
-    );
-    execute('DELETE FROM pagos WHERE id = ?', [ultimoPago.id]);
+  try {
+    transaction(() => {
+      const totalAntes = queryOne(
+        'SELECT COALESCE(SUM(monto), 0) as total FROM pagos WHERE turno_id = ? AND ciclo_id = ?',
+        [turno_id, ciclo_id]
+      ).total;
 
-    const juntaDesh = queryOne('SELECT * FROM juntas WHERE id = ?', [junta_id]);
-    const cicloDesh = queryOne('SELECT * FROM ciclos WHERE id = ?', [ciclo_id]);
-    if (juntaDesh && cicloDesh) {
+      registrarEnHistorial(
+        junta_id,
+        'pago_eliminado',
+        turno_id,
+        ciclo_id,
+        ultimoPago.monto,
+        ultimoPago.metodo_pago_id,
+        ultimoPago.fecha_pago,
+        null
+      );
+      execute('DELETE FROM pagos WHERE id = ?', [ultimoPago.id]);
+
       const totalDespues = queryOne(
         'SELECT COALESCE(SUM(monto), 0) as total FROM pagos WHERE turno_id = ? AND ciclo_id = ?',
         [turno_id, ciclo_id]
@@ -262,9 +339,13 @@ router.post('/deshacer', (req, res) => {
           porEliminar -= aEliminar;
         }
       }
-    }
-  }
 
-  execute('UPDATE ciclos SET completado = 0 WHERE id = ?', [ciclo_id]);
-  res.redirect(`/juntas/${junta_id}`);
+      execute('UPDATE ciclos SET completado = 0 WHERE id = ?', [ciclo_id]);
+    });
+
+    return res.redirect(`/juntas/${junta_id}`);
+  } catch (e) {
+    console.error('Error en /deshacer:', e);
+    return res.redirect(`/juntas/${junta_id}?error=error_general`);
+  }
 });

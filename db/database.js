@@ -7,6 +7,26 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const DB_PATH = process.env.DB_PATH || join(__dirname, '..', 'juntas.db');
 
 let db = null;
+let _inTransaction = false;
+
+export function inTransaction() {
+  return _inTransaction;
+}
+
+export function transaction(fn) {
+  _inTransaction = true;
+  db.run('BEGIN');
+  try {
+    fn();
+    db.run('COMMIT');
+    _inTransaction = false;
+    saveDb();
+  } catch (e) {
+    db.run('ROLLBACK');
+    _inTransaction = false;
+    throw e;
+  }
+}
 
 export async function getDb() {
   if (db) return db;
@@ -76,6 +96,6 @@ export function insert(table, data) {
   stmt.step();
   const id = db.exec("SELECT last_insert_rowid() AS rid")[0]?.values?.[0]?.[0];
   stmt.free();
-  saveDb();
+  if (!_inTransaction) saveDb();
   return id;
 }

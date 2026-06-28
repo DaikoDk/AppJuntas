@@ -8,7 +8,27 @@
     <h1 class="font-headline-md text-headline-md text-on-surface">Nueva Junta</h1>
   </div>
 
-  <% if (error === 'sin_participantes') { %>
+  <% if (error === 'sin_nombre') { %>
+  <div class="bg-error-container border border-error-container rounded-xl p-4 flex items-center gap-3 mb-4">
+    <span class="material-symbols-outlined text-error-alert">warning</span>
+    <p class="font-body-md text-body-md text-on-surface-variant">El nombre de la junta es obligatorio.</p>
+  </div>
+  <% } else if (error === 'monto_invalido') { %>
+  <div class="bg-error-container border border-error-container rounded-xl p-4 flex items-center gap-3 mb-4">
+    <span class="material-symbols-outlined text-error-alert">warning</span>
+    <p class="font-body-md text-body-md text-on-surface-variant">El monto de aporte debe ser un número mayor a 0.</p>
+  </div>
+  <% } else if (error === 'frecuencia_invalida') { %>
+  <div class="bg-error-container border border-error-container rounded-xl p-4 flex items-center gap-3 mb-4">
+    <span class="material-symbols-outlined text-error-alert">warning</span>
+    <p class="font-body-md text-body-md text-on-surface-variant">La frecuencia debe ser al menos 1 día.</p>
+  </div>
+  <% } else if (error === 'fecha_invalida') { %>
+  <div class="bg-error-container border border-error-container rounded-xl p-4 flex items-center gap-3 mb-4">
+    <span class="material-symbols-outlined text-error-alert">warning</span>
+    <p class="font-body-md text-body-md text-on-surface-variant">La fecha de inicio es obligatoria y debe ser válida.</p>
+  </div>
+  <% } else if (error === 'sin_participantes') { %>
   <div class="bg-error-container border border-error-container rounded-xl p-4 flex items-center gap-3 mb-4">
     <span class="material-symbols-outlined text-error-alert">warning</span>
     <p class="font-body-md text-body-md text-on-surface-variant">Asigna al menos un participante a cada turno.</p>
@@ -179,6 +199,21 @@ document.getElementById('turnosContainer').addEventListener('click', function(e)
 });
 
 function mostrarResumen() {
+  if (!document.getElementById('formNombre').value.trim()) {
+    alert('El nombre de la junta es obligatorio.'); return;
+  }
+  var monto = parseFloat(document.getElementById('formMonto').value);
+  if (!monto || monto <= 0) {
+    alert('El monto de aporte debe ser un número mayor a 0.'); return;
+  }
+  var freq = parseInt(document.getElementById('formFrecuencia').value);
+  if (!freq || freq < 1) {
+    alert('La frecuencia debe ser al menos 1 día.'); return;
+  }
+  if (!document.getElementById('formFecha').value) {
+    alert('La fecha de inicio es obligatoria.'); return;
+  }
+
   const selects = document.querySelectorAll('select[name="participantes[]"]');
   let empty = false;
   selects.forEach(s => { if (!s.value) empty = true; });

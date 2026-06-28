@@ -1,7 +1,12 @@
 import { Router } from 'express';
-import { query, queryOne, insert, execute } from '../db/database.js';
+import { query, queryOne, insert, execute, transaction } from '../db/database.js';
 
 export const router = Router();
+
+function safeId(val) {
+  const n = parseInt(val);
+  return isNaN(n) || n < 1 ? null : n;
+}
 
 router.get('/', (req, res) => {
   const juntas = query(`
@@ -28,6 +33,28 @@ router.get('/nueva', (req, res) => {
 router.post('/nueva', (req, res) => {
   const { nombre, monto_aporte, frecuencia_dias, fecha_inicio, participantes } = req.body;
 
+  if (!nombre || !nombre.trim()) {
+    return res.redirect('/juntas/nueva?error=sin_nombre');
+  }
+
+  const monto = parseFloat(monto_aporte);
+  if (!monto || monto <= 0) {
+    return res.redirect('/juntas/nueva?error=monto_invalido');
+  }
+
+  const frecuencia = parseInt(frecuencia_dias);
+  if (!frecuencia || frecuencia < 1) {
+    return res.redirect('/juntas/nueva?error=frecuencia_invalida');
+  }
+
+  if (!fecha_inicio) {
+    return res.redirect('/juntas/nueva?error=fecha_invalida');
+  }
+  const fechaObj = new Date(fecha_inicio);
+  if (isNaN(fechaObj.getTime())) {
+    return res.redirect('/juntas/nueva?error=fecha_invalida');
+  }
+
   const count = queryOne(
     'SELECT COUNT(*) as cnt FROM participantes WHERE usuario_id = ? AND activo = 1',
     [req.user.id]
@@ -47,47 +74,66 @@ router.post('/nueva', (req, res) => {
     return res.redirect('/juntas/nueva?error=sin_participantes');
   }
 
-  const cantidadTurnos = parseInt(req.body.cantidad_turnos) || ids.length;
-  if (ids.length !== cantidadTurnos) {
+  const idsValidos = ids.map(pid => safeId(pid)).filter(pid => pid !== null);
+  if (idsValidos.length === 0 || idsValidos.length !== ids.length) {
+    return res.redirect('/juntas/nueva?error=participante_invalido');
+  }
+
+  for (const pid of idsValidos) {
+    const p = queryOne('SELECT id FROM participantes WHERE id = ? AND usuario_id = ? AND activo = 1', [pid, req.user.id]);
+    if (!p) return res.redirect('/juntas/nueva?error=participante_invalido');
+  }
+
+  const cantidadTurnos = parseInt(req.body.cantidad_turnos) || idsValidos.length;
+  if (idsValidos.length !== cantidadTurnos) {
     return res.redirect('/juntas/nueva?error=sin_participantes');
   }
 
-  const juntaId = insert('juntas', {
-    usuario_id: req.user.id,
-    nombre,
-    monto_aporte: parseFloat(monto_aporte),
-    frecuencia_dias: parseInt(frecuencia_dias),
-    fecha_inicio,
-    dia_resumen: new Date(fecha_inicio).toLocaleDateString('en-US', { weekday: 'long' }),
-  });
+  try {
+    transaction(() => {
+      const juntaId = insert('juntas', {
+        usuario_id: req.user.id,
+        nombre: nombre.trim(),
+        monto_aporte: monto,
+        frecuencia_dias: frecuencia,
+        fecha_inicio,
+        dia_resumen: fechaObj.toLocaleDateString('en-US', { weekday: 'long' }),
+      });
 
-  ids.forEach((pid, idx) => {
-    insert('turnos', {
-      junta_id: juntaId,
-      participante_id: parseInt(pid),
-      orden: idx + 1,
-    });
-  });
+      idsValidos.forEach((pid, idx) => {
+        insert('turnos', {
+          junta_id: juntaId,
+          participante_id: pid,
+          orden: idx + 1,
+        });
+      });
 
-  const totalTurnos = ids.length;
-  const fechaInicioObj = new Date(fecha_inicio);
-  for (let i = 0; i < totalTurnos; i++) {
-    const fechaCierre = new Date(fechaInicioObj);
-    fechaCierre.setDate(fechaCierre.getDate() + i * parseInt(frecuencia_dias));
-    insert('ciclos', {
-      junta_id: juntaId,
-      numero: i + 1,
-      fecha_cierre: fechaCierre.toISOString().split('T')[0],
+      const totalTurnos = idsValidos.length;
+      const fechaInicioObj = new Date(fecha_inicio);
+      for (let i = 0; i < totalTurnos; i++) {
+        const fechaCierre = new Date(fechaInicioObj);
+        fechaCierre.setDate(fechaCierre.getDate() + i * frecuencia);
+        insert('ciclos', {
+          junta_id: juntaId,
+          numero: i + 1,
+          fecha_cierre: fechaCierre.toISOString().split('T')[0],
+        });
+      }
     });
+    return res.redirect('/juntas');
+  } catch (e) {
+    console.error('Error al crear junta:', e);
+    return res.redirect('/juntas/nueva?error=error_general');
   }
-
-  res.redirect(`/juntas/${juntaId}`);
 });
 
 router.get('/:id', (req, res) => {
+  const id = safeId(req.params.id);
+  if (!id) return res.redirect('/juntas');
+
   const junta = queryOne(
     'SELECT * FROM juntas WHERE id = ? AND usuario_id = ?',
-    [req.params.id, req.user.id]
+    [id, req.user.id]
   );
   if (!junta) return res.redirect('/juntas');
 
@@ -174,9 +220,12 @@ router.get('/:id', (req, res) => {
 });
 
 router.get('/:id/historial', (req, res) => {
+  const id = safeId(req.params.id);
+  if (!id) return res.redirect('/juntas');
+
   const junta = queryOne(
     'SELECT * FROM juntas WHERE id = ? AND usuario_id = ?',
-    [req.params.id, req.user.id]
+    [id, req.user.id]
   );
   if (!junta) return res.redirect('/juntas');
 
@@ -198,39 +247,59 @@ router.get('/:id/historial', (req, res) => {
 });
 
 router.post('/:id/ceder', (req, res) => {
-  const { turno_id, nuevo_participante_id } = req.body;
+  const junta_id = safeId(req.params.id);
+  const turno_id = safeId(req.body.turno_id);
+  const nuevo_participante_id = safeId(req.body.nuevo_participante_id);
+
+  if (!junta_id || !turno_id || !nuevo_participante_id) {
+    return res.redirect(`/juntas/${junta_id || ''}?error=parametros_invalidos`);
+  }
+
+  const junta = queryOne('SELECT id FROM juntas WHERE id = ? AND usuario_id = ?', [junta_id, req.user.id]);
+  if (!junta) return res.redirect('/juntas');
 
   const turno = queryOne(
     'SELECT * FROM turnos WHERE id = ? AND junta_id = ?',
-    [turno_id, req.params.id]
+    [turno_id, junta_id]
   );
-  if (!turno) return res.redirect(`/juntas/${req.params.id}`);
+  if (!turno) return res.redirect(`/juntas/${junta_id}`);
+
+  const nuevoParticipante = queryOne(
+    'SELECT id, nombre FROM participantes WHERE id = ? AND usuario_id = ? AND activo = 1',
+    [nuevo_participante_id, req.user.id]
+  );
+  if (!nuevoParticipante) return res.redirect(`/juntas/${junta_id}?error=participante_invalido`);
 
   const anterior = queryOne('SELECT nombre FROM participantes WHERE id = ?', [turno.participante_id]);
-  const nuevo = queryOne('SELECT nombre FROM participantes WHERE id = ?', [nuevo_participante_id]);
 
-  insert('historial_cesiones', {
-    turno_id: turno.id,
-    participante_anterior_id: turno.participante_id,
-    participante_nuevo_id: parseInt(nuevo_participante_id),
-  });
+  try {
+    transaction(() => {
+      insert('historial_cesiones', {
+        turno_id: turno.id,
+        participante_anterior_id: turno.participante_id,
+        participante_nuevo_id: nuevoParticipante.id,
+      });
 
-  insert('historial', {
-    junta_id: parseInt(req.params.id),
-    tipo: 'cesion',
-    turno_id: turno.id,
-    participante_id: parseInt(nuevo_participante_id),
-    descripcion: `${anterior ? anterior.nombre : '?'} → ${nuevo ? nuevo.nombre : '?'}`,
-  });
+      insert('historial', {
+        junta_id,
+        tipo: 'cesion',
+        turno_id: turno.id,
+        participante_id: nuevoParticipante.id,
+        descripcion: `${anterior ? anterior.nombre : '?'} → ${nuevoParticipante.nombre}`,
+      });
 
-  insert('turnos', {
-    junta_id: turno.junta_id,
-    participante_id: parseInt(nuevo_participante_id),
-    orden: turno.orden,
-    turno_origen_id: turno.id,
-  });
+      insert('turnos', {
+        junta_id: turno.junta_id,
+        participante_id: nuevoParticipante.id,
+        orden: turno.orden,
+        turno_origen_id: turno.id,
+      });
 
-  execute('UPDATE turnos SET activo = 0 WHERE id = ?', [turno.id]);
-
-  res.redirect(`/juntas/${req.params.id}`);
+      execute('UPDATE turnos SET activo = 0 WHERE id = ?', [turno.id]);
+    });
+    return res.redirect(`/juntas/${junta_id}`);
+  } catch (e) {
+    console.error('Error en ceder:', e);
+    return res.redirect(`/juntas/${junta_id}?error=error_general`);
+  }
 });
