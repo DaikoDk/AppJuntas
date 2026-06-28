@@ -63,7 +63,9 @@ export function setupAuth(app) {
         const allowed = (process.env.ALLOWED_EMAILS || '').split(',').map(e => e.trim()).filter(Boolean);
         if (allowed.length > 0 && !allowed.includes(user.email)) {
           req.logout(() => {
-            res.render('no-autorizado', { user: null, email: user.email });
+            req.session.destroy(() => {
+              res.render('no-autorizado', { user: null, email: user.email });
+            });
           });
           return;
         }
@@ -76,7 +78,9 @@ export function setupAuth(app) {
   router.get('/auth/logout', (req, res, next) => {
     req.logout((err) => {
       if (err) return next(err);
-      res.redirect('/login');
+      req.session.destroy(() => {
+        res.redirect('/login');
+      });
     });
   });
 
