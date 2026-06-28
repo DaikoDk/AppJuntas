@@ -249,6 +249,12 @@
       <span class="inline text-headline-md text-on-surface-variant opacity-30" style="font-weight:100">|</span>
       <span class="inline text-headline-md text-on-surface-variant"><%= user.nombre %></span>
     </div>
+    <div class="flex items-center gap-2">
+      <a href="/auth/logout" class="flex items-center gap-1.5 px-3 py-2 rounded-xl text-on-surface-variant hover:text-error hover:bg-error-container/30 transition-all active:scale-90 font-label-md" title="Cerrar sesión">
+        <span class="material-symbols-outlined text-[20px] md:text-[18px]">logout</span>
+        <span class="hidden md:inline">Salir</span>
+      </a>
+    </div>
   </div>
 </header>
 <nav class="hidden md:flex fixed top-16 left-0 w-full z-40 bg-surface/80 dark:bg-surface-dark/80 premium-blur border-b border-outline-variant/20">
