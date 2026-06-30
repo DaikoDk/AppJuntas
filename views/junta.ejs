@@ -12,6 +12,11 @@
   <span class="material-symbols-outlined text-warning-debt">info</span>
   <p class="font-body-md text-body-md text-on-surface font-medium">No puedes deshacer un pago de exceso. Deshace el pago original que lo generó.</p>
 </div>
+<% } else if (error === 'monto_excede_deuda') { %>
+<div class="bg-error-container border border-error-container rounded-xl p-4 flex items-center gap-3 mb-4">
+  <span class="material-symbols-outlined text-error-alert">warning</span>
+  <p class="font-body-md text-body-md text-on-surface font-medium">El monto supera la deuda total del participante.</p>
+</div>
 <% } %>
 <section class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-2">
   <div>

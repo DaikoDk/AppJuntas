@@ -108,6 +108,19 @@ router.post('/registrar', (req, res) => {
   const juntaVal = queryOne('SELECT * FROM juntas WHERE id = ? AND usuario_id = ?', [junta_id, req.user.id]);
   if (!juntaVal) return res.redirect(`/juntas/${junta_id}?error=junta_no_existe`);
 
+  const pagosTurno = query(
+    'SELECT ciclo_id, SUM(monto) as total FROM pagos WHERE turno_id = ? GROUP BY ciclo_id',
+    [turno_id]
+  );
+  const pagosMap = {};
+  pagosTurno.forEach(p => { pagosMap[p.ciclo_id] = p.total; });
+  const ciclosJunta = query('SELECT id FROM ciclos WHERE junta_id = ?', [junta_id]);
+  const deudaTotal = ciclosJunta.reduce((sum, c) => sum + Math.max(0, juntaVal.monto_aporte - (pagosMap[c.id] || 0)), 0);
+
+  if (monto > deudaTotal) {
+    return res.redirect(`/juntas/${junta_id}?error=monto_excede_deuda`);
+  }
+
   try {
     transaction(() => {
       const pagoId = insert('pagos', {
@@ -223,6 +236,11 @@ router.post('/registrar-inteligente', (req, res) => {
 
   if (ciclosConDeuda.length === 0) {
     return res.redirect(`/juntas/${junta_id}?error=sin_deuda`);
+  }
+
+  const deudaTotal = ciclosConDeuda.reduce((sum, c) => sum + (junta.monto_aporte - c.total_pagado), 0);
+  if (monto > deudaTotal) {
+    return res.redirect(`/juntas/${junta_id}?error=monto_excede_deuda`);
   }
 
   try {
