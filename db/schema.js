@@ -148,6 +148,12 @@ export async function initSchema() {
     // el índice ya existe o hay duplicados
   }
 
+  try {
+    execute('ALTER TABLE historial ADD COLUMN pago_id INTEGER DEFAULT NULL');
+  } catch (e) {
+    // ya existe
+  }
+
   const histCheck = query('SELECT COUNT(*) as c FROM historial');
   if (histCheck[0].c === 0) {
     const cesiones = query(`

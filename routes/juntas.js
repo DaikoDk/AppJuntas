@@ -157,6 +157,15 @@ router.get('/:id', (req, res) => {
     ORDER BY pg.id ASC
   `, [junta.id]);
 
+  const excesos = query(
+    'SELECT turno_id, ciclo_id, monto FROM historial WHERE junta_id = ? AND tipo = ?',
+    [junta.id, 'pago_exceso']
+  );
+  const excesosSet = new Set(excesos.map(e => `${e.turno_id}-${e.ciclo_id}-${e.monto}`));
+  pagos.forEach(p => {
+    p.esExceso = excesosSet.has(`${p.turno_id_ref}-${p.ciclo_id}-${p.monto}`);
+  });
+
   const pagosPorTurnoCiclo = {};
   pagos.forEach(p => {
     const key = `${p.turno_id_ref}-${p.ciclo_id}`;

@@ -7,6 +7,11 @@
   <span class="material-symbols-outlined text-error-alert">warning</span>
   <p class="font-body-md text-body-md text-on-surface font-medium">La fecha del pago no puede ser mayor a la actual.</p>
 </div>
+<% } else if (error === 'exceso_no_revertible') { %>
+<div class="bg-warning-debt/10 border border-warning-debt/30 rounded-xl p-4 flex items-center gap-3 mb-4">
+  <span class="material-symbols-outlined text-warning-debt">info</span>
+  <p class="font-body-md text-body-md text-on-surface font-medium">No puedes deshacer un pago de exceso. Deshace el pago original que lo generó.</p>
+</div>
 <% } %>
 <section class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-2">
   <div>
@@ -172,7 +177,7 @@
                   <span class="material-symbols-outlined" style="font-size:16px">payments</span> Cobrar
                 </button>
               <% } %>
-              <% if (!isPast && completo) { %>
+              <% if (!isPast && completo && !(pagosArr.length > 0 && pagosArr[pagosArr.length - 1].esExceso)) { %>
                 <form method="POST" action="/pagos/deshacer" class="inline">
                   <input type="hidden" name="turno_id" value="<%= t.id %>">
                   <input type="hidden" name="ciclo_id" value="<%= c.id %>">

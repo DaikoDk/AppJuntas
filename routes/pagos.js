@@ -19,7 +19,7 @@ function safeFecha(val) {
   return val;
 }
 
-function registrarEnHistorial(juntaId, tipo, turnoId, cicloId, monto, metodoPagoId, fechaPago, fechaRegistro) {
+function registrarEnHistorial(juntaId, tipo, turnoId, cicloId, monto, metodoPagoId, fechaPago, fechaRegistro, pagoId) {
   const turno = queryOne('SELECT participante_id FROM turnos WHERE id = ?', [turnoId]);
   const junta = queryOne('SELECT id FROM juntas WHERE id = ?', [juntaId]);
   if (!turno || !junta) return;
@@ -47,6 +47,7 @@ function registrarEnHistorial(juntaId, tipo, turnoId, cicloId, monto, metodoPago
     fecha_pago: fechaPago || null,
     fecha_registro: fechaRegistro || null,
     descripcion: descripcion.trim(),
+    pago_id: pagoId || null,
   });
 }
 
@@ -101,7 +102,7 @@ router.post('/registrar', (req, res) => {
   const turnoVal = queryOne('SELECT id, junta_id, participante_id FROM turnos WHERE id = ?', [turno_id]);
   if (!turnoVal) return res.redirect(`/juntas/${junta_id}?error=turno_no_existe`);
 
-  const cicloVal = queryOne('SELECT id, junta_id FROM ciclos WHERE id = ?', [ciclo_id]);
+  const cicloVal = queryOne('SELECT id, junta_id, numero FROM ciclos WHERE id = ?', [ciclo_id]);
   if (!cicloVal) return res.redirect(`/juntas/${junta_id}?error=ciclo_no_existe`);
 
   const juntaVal = queryOne('SELECT * FROM juntas WHERE id = ? AND usuario_id = ?', [junta_id, req.user.id]);
@@ -128,7 +129,8 @@ router.post('/registrar', (req, res) => {
         monto,
         metodo_pago_id,
         pago.fecha_pago,
-        pago.fecha_registro
+        pago.fecha_registro,
+        pagoId
       );
 
       const totalPagadoReg = queryOne(
@@ -170,6 +172,7 @@ router.post('/registrar', (req, res) => {
             fecha_pago: ahora,
             fecha_registro: ahora,
             participante_id: turnoVal.participante_id,
+            pago_id: pagoId,
             descripcion: `Exceso S/${aPagar.toFixed(0)} de Semana ${cicloVal.numero} → Semana ${cf.numero}`,
           });
           exceso -= aPagar;
@@ -250,7 +253,8 @@ router.post('/registrar-inteligente', (req, res) => {
           aPagar,
           metodo_pago_id,
           pago.fecha_pago,
-          pago.fecha_registro
+          pago.fecha_registro,
+          pagoId
         );
 
         restante -= aPagar;
@@ -277,11 +281,8 @@ router.post('/deshacer', (req, res) => {
     return res.redirect(`/juntas/${junta_id || ''}?error=parametros_invalidos`);
   }
 
-  const juntaDesh = queryOne('SELECT * FROM juntas WHERE id = ? AND usuario_id = ?', [junta_id, req.user.id]);
-  if (!juntaDesh) return res.redirect(`/juntas?error=junta_no_existe`);
-
-  const cicloDesh = queryOne('SELECT * FROM ciclos WHERE id = ?', [ciclo_id]);
-  if (!cicloDesh) return res.redirect(`/juntas/${junta_id}?error=ciclo_no_existe`);
+  const juntaCheck = queryOne('SELECT id FROM juntas WHERE id = ? AND usuario_id = ?', [junta_id, req.user.id]);
+  if (!juntaCheck) return res.redirect('/juntas?error=junta_no_existe');
 
   const ultimoPago = queryOne(`
     SELECT * FROM pagos
@@ -293,13 +294,16 @@ router.post('/deshacer', (req, res) => {
     return res.redirect(`/juntas/${junta_id}?error=sin_pago`);
   }
 
+  const esExceso = queryOne(
+    'SELECT id FROM historial WHERE tipo = ? AND ciclo_id = ? AND turno_id = ? AND monto = ? LIMIT 1',
+    ['pago_exceso', ciclo_id, turno_id, ultimoPago.monto]
+  );
+  if (esExceso) {
+    return res.redirect(`/juntas/${junta_id}?error=exceso_no_revertible`);
+  }
+
   try {
     transaction(() => {
-      const totalAntes = queryOne(
-        'SELECT COALESCE(SUM(monto), 0) as total FROM pagos WHERE turno_id = ? AND ciclo_id = ?',
-        [turno_id, ciclo_id]
-      ).total;
-
       registrarEnHistorial(
         junta_id,
         'pago_eliminado',
@@ -308,37 +312,34 @@ router.post('/deshacer', (req, res) => {
         ultimoPago.monto,
         ultimoPago.metodo_pago_id,
         ultimoPago.fecha_pago,
-        null
+        null,
+        ultimoPago.id
       );
+
+      const excesosGenerados = query(
+        `SELECT h.id as h_id, h.ciclo_id, h.monto
+         FROM historial h
+         WHERE h.pago_id = ? AND h.tipo = 'pago_exceso'`,
+        [ultimoPago.id]
+      );
+
+      for (const ex of excesosGenerados) {
+        const exPago = queryOne(
+          'SELECT id FROM pagos WHERE turno_id = ? AND ciclo_id = ? AND monto = ? ORDER BY id DESC LIMIT 1',
+          [turno_id, ex.ciclo_id, ex.monto]
+        );
+        if (exPago) {
+          execute('DELETE FROM pagos WHERE id = ?', [exPago.id]);
+        }
+        execute('DELETE FROM historial WHERE id = ?', [ex.h_id]);
+      }
+
       execute('DELETE FROM pagos WHERE id = ?', [ultimoPago.id]);
 
-      const totalDespues = queryOne(
-        'SELECT COALESCE(SUM(monto), 0) as total FROM pagos WHERE turno_id = ? AND ciclo_id = ?',
-        [turno_id, ciclo_id]
-      ).total;
-      const excesoAntes = Math.max(0, totalAntes - juntaDesh.monto_aporte);
-      const excesoDespues = Math.max(0, totalDespues - juntaDesh.monto_aporte);
-      const excesoPerdido = excesoAntes - excesoDespues;
-
-      if (excesoPerdido > 0) {
-        const excesses = query(`
-          SELECT h.id as h_id, h.ciclo_id, h.monto
-          FROM historial h
-          JOIN ciclos c ON h.ciclo_id = c.id
-          WHERE h.turno_id = ? AND h.tipo = 'pago_exceso' AND c.numero > ? AND c.junta_id = ?
-          ORDER BY c.numero ASC
-        `, [turno_id, cicloDesh.numero, junta_id]);
-
-        let porEliminar = excesoPerdido;
-        for (const ex of excesses) {
-          if (porEliminar <= 0) break;
-          const aEliminar = Math.min(porEliminar, ex.monto);
-          execute('DELETE FROM historial WHERE id = ?', [ex.h_id]);
-          execute('DELETE FROM pagos WHERE turno_id = ? AND ciclo_id = ? AND monto = ?',
-            [turno_id, ex.ciclo_id, aEliminar]);
-          porEliminar -= aEliminar;
-        }
-      }
+      execute(
+        'DELETE FROM historial WHERE pago_id = ? AND tipo = ?',
+        [ultimoPago.id, 'pago']
+      );
 
       execute('UPDATE ciclos SET completado = 0 WHERE id = ?', [ciclo_id]);
     });
