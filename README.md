@@ -4,91 +4,89 @@
 [![Express](https://img.shields.io/badge/Express-4.18-000000?logo=express)](https://expressjs.com)
 [![License](https://img.shields.io/badge/License-MIT-lightgrey)](LICENSE)
 
-**[ES]** App web para gestionar comunidades de ahorro (juntas). Permite registrar participantes, crear juntas con turnos, registrar pagos, distribuir excedentes automáticamente y recibir notificaciones por email y push.
+Web app for managing savings communities (rotating savings groups). Register participants, create savings groups with turns, track payments, auto-distribute overpayments, and receive email + push notifications.
 
-**[EN]** Web app for managing savings communities (rotating savings groups). Register participants, create savings groups with turns, track payments, auto-distribute overpayments, and receive email + push notifications.
-
----
-
-## Stack / Tecnologies
-
-| Capa         | Tecnología / Technology                        |
-|--------------|------------------------------------------------|
-| Runtime      | Node.js 18+, ES Modules                        |
-| Backend      | Express 4.18, Passport.js                      |
-| Templates    | EJS (Server-Side Rendering)                    |
-| Auth         | Google OAuth 2.0 + Email Whitelist             |
-| Database     | SQLite (sql.js)                                |
-| Frontend     | Tailwind CSS (CDN), Material Symbols           |
-| Email        | Nodemailer (Gmail SMTP)                        |
-| Push         | Web Push API (VAPID)                           |
-| PWA          | Service Worker + manifest.json                 |
+[🇪🇸 Leer en español](#versión-en-español)
 
 ---
 
-## Setup Local
+## Stack
 
-### Requisitos / Requirements
+| Layer      | Technology                                     |
+|------------|------------------------------------------------|
+| Runtime    | Node.js 18+, ES Modules                       |
+| Backend    | Express 4.18, Passport.js                     |
+| Templates  | EJS (Server-Side Rendering)                   |
+| Auth       | Google OAuth 2.0 + Email Whitelist            |
+| Database   | SQLite (sql.js)                               |
+| Frontend   | Tailwind CSS (CDN), Material Symbols          |
+| Email      | Nodemailer (Gmail SMTP)                       |
+| Push       | Web Push API (VAPID)                          |
+| PWA        | Service Worker + manifest.json                |
+
+---
+
+## Setup
+
+### Requirements
 
 - Node.js 18+
-- Google Cloud account (para OAuth / for OAuth)
-- Gmail with App Password (para notificaciones / for notifications)
+- Google Cloud account (for OAuth)
+- Gmail with App Password (for notifications)
 
-### Instalación / Installation
+### Installation
 
 ```bash
-# 1. Clonar el repositorio / Clone the repository
+# 1. Clone the repository
 git clone https://github.com/DaikoDk/AppJuntas.git
 cd AppJuntas
 
-# 2. Copiar variables de entorno / Copy environment variables
+# 2. Copy environment variables
 cp .env.example .env
 
-# 3. Instalar dependencias / Install dependencies
+# 3. Install dependencies
 npm install
 
-# 4. Configurar .env (ver tabla abajo) / Configure .env (see table below)
+# 4. Configure .env (see table below)
 
-# 5. Ejecutar / Run
+# 5. Run
 npm run dev
 
-# App en http://localhost:3000
+# App at http://localhost:3000
 ```
 
 ---
 
-## Variables de Entorno / Environment Variables
+## Environment Variables
 
-| Variable | Requerida / Required | Descripción / Description |
-|----------|----------------------|---------------------------|
-| `GOOGLE_CLIENT_ID` | Sí / Yes | Client ID de Google Cloud Console |
-| `GOOGLE_CLIENT_SECRET` | Sí / Yes | Client Secret de Google Cloud Console |
-| `GOOGLE_CALLBACK_URL` | Sí / Yes | URL de callback OAuth (ej: `http://localhost:3000/auth/google/callback`) |
-| `SESSION_SECRET` | Sí / Yes | Secreto para firmar sesiones de usuario |
-| `ALLOWED_EMAILS` | Sí / Yes | Emails permitidos, separados por coma (ej: `user1@gmail.com,user2@gmail.com`) |
-| `ADMIN_EMAIL` | No | Email del administrador (accede al panel de admin) |
-| `GMAIL_USER` | No | Gmail para enviar notificaciones semanales |
-| `GMAIL_APP_PASSWORD` | No | App Password de Gmail (no la contraseña normal) |
-| `VAPID_PUBLIC_KEY` | No | Clave pública VAPID para push notifications |
-| `VAPID_PRIVATE_KEY` | No | Clave privada VAPID para push notifications |
-| `PORT` | No | Puerto del servidor (default: `3000`) |
-
----
-
-## Autenticación / Authentication
-
-**[ES]** La app utiliza Google OAuth como único método de login. Solo los emails listados en `ALLOWED_EMAILS` pueden acceder. El registro es automático al primer login con Google. Soporte para máximo 10 usuarios registrados.
-
-**[EN]** The app uses Google OAuth as the only login method. Only emails listed in `ALLOWED_EMAILS` can access the app. Registration is automatic on first Google login. Supports up to 10 registered users.
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `GOOGLE_CLIENT_ID` | Yes | Google Cloud Console Client ID |
+| `GOOGLE_CLIENT_SECRET` | Yes | Google Cloud Console Client Secret |
+| `GOOGLE_CALLBACK_URL` | Yes | OAuth callback URL (e.g. `http://localhost:3000/auth/google/callback`) |
+| `SESSION_SECRET` | Yes | Secret for signing user sessions |
+| `ALLOWED_EMAILS` | Yes | Allowed emails, comma-separated (e.g. `user1@gmail.com,user2@gmail.com`) |
+| `ADMIN_EMAIL` | No | Admin email (grants access to admin panel) |
+| `GMAIL_USER` | No | Gmail for sending weekly notifications |
+| `GMAIL_APP_PASSWORD` | No | Gmail App Password (not your regular password) |
+| `VAPID_PUBLIC_KEY` | No | VAPID public key for push notifications |
+| `VAPID_PRIVATE_KEY` | No | VAPID private key for push notifications |
+| `PORT` | No | Server port (default: `3000`) |
 
 ---
 
-## Estructura del Proyecto / Project Structure
+## Authentication
+
+The app uses Google OAuth as the only login method. Only emails listed in `ALLOWED_EMAILS` can access the app. Registration is automatic on first Google login. Supports up to 10 registered users.
+
+---
+
+## Project Structure
 
 ```
 AppJuntas/
 ├── index.js                # Entry point — Express server
-├── .env                    # Environment variables (no gitignored, see .env.example)
+├── .env                    # Environment variables (see .env.example)
 ├── .env.example            # Template for environment variables
 ├── package.json
 ├── db/
@@ -123,74 +121,207 @@ AppJuntas/
 
 ---
 
-## Base de Datos / Database
+## Database
 
-**[ES]** SQLite con 11 tablas. La BD se crea automáticamente al primer inicio.
+SQLite with 11 tables. Database is created automatically on first run.
 
-**[EN]** SQLite with 11 tables. Database is created automatically on first run.
-
-| Tabla / Table | Descripción / Description |
-|---------------|---------------------------|
-| `usuarios` | Cuentas de usuario (Google OAuth) / User accounts |
-| `participantes` | Miembros de la comunidad de ahorro / Savings group members |
-| `juntas` | Grupos de ahorro / Savings groups |
-| `turnos` | Orden de cobro por junta / Turn order within a junta |
-| `ciclos` | Semanas/ciclos de pago / Payment cycles |
-| `metodos_pago` | Métodos de pago (Efectivo, Yape, Plin) / Payment methods |
-| `pagos` | Pagos registrados / Registered payments |
-| `historial` | Auditoría de eventos (append-only) / Event audit trail |
-| `historial_cesiones` | Transferencias de turno / Turn transfer history |
-| `envios_email` | Log de emails enviados / Email send log |
-| `suscripciones_push` | Suscripciones a notificaciones push / Push notification subscriptions |
+| Table | Description |
+|-------|-------------|
+| `usuarios` | User accounts (Google OAuth) |
+| `participantes` | Savings group members |
+| `juntas` | Savings groups |
+| `turnos` | Turn order within a junta |
+| `ciclos` | Payment cycles |
+| `metodos_pago` | Payment methods (Cash, Yape, Plin) |
+| `pagos` | Registered payments |
+| `historial` | Event audit trail (append-only) |
+| `historial_cesiones` | Turn transfer history |
+| `envios_email` | Email send log |
+| `suscripciones_push` | Push notification subscriptions |
 
 ---
 
-## Funcionalidades / Features
+## Features
 
-- [ES] Auth con Google OAuth + whitelist por email
-- [EN] Google OAuth auth + email whitelist
+- Google OAuth authentication + email whitelist
+- Full participant CRUD with phone validation
+- Junta creation with automatic turns and cycles
+- Manual and smart payment registration (debt prioritization)
+- Automatic overpayment distribution to future cycles
+- Undo payments with overpayment reversal
+- Turn cession to other participants
+- Complete payment history (append-only audit trail)
+- Debt alerts with overdue day count
+- Per-participant balance
+- Weekly email summary
+- Push notifications (PWA)
+- Dark mode with smooth transitions
+- Responsive design (mobile + desktop)
+- Admin panel (ADMIN_EMAIL only)
 
-- [ES] CRUD completo de participantes con validación de teléfono
-- [EN] Full participant CRUD with phone validation
+---
 
-- [ES] Creación de juntas con turnos y ciclos automáticos
-- [EN] Junta creation with automatic turns and cycles
+## License
 
-- [ES] Registro de pagos manual e inteligente (prioriza deudas)
-- [EN] Manual and smart payment registration (debt prioritization)
+MIT
 
-- [ES] Distribución automática de excedentes a ciclos futuros
-- [EN] Automatic overpayment distribution to future cycles
+---
+---
 
-- [ES] Deshacer pagos con reversión de excedentes
-- [EN] Undo payments with overpayment reversal
+# Versión en español
 
-- [ES] Cesión de turnos a otros participantes
-- [EN] Turn cession to other participants
+App web para gestionar comunidades de ahorro (juntas). Permite registrar participantes, crear juntas con turnos, registrar pagos, distribuir excedentes automáticamente y recibir notificaciones por email y push.
 
-- [ES] Historial completo de pagos (audit trail append-only)
-- [EN] Complete payment history (append-only audit trail)
+---
 
-- [ES] Alertas de deuda con conteo de días de atraso
-- [EN] Debt alerts with overdue day count
+## Stack
 
-- [ES] Balance por participante
-- [EN] Per-participant balance
+| Capa       | Tecnología                                    |
+|------------|-----------------------------------------------|
+| Runtime    | Node.js 18+, ES Modules                      |
+| Backend    | Express 4.18, Passport.js                    |
+| Templates  | EJS (Server-Side Rendering)                  |
+| Auth       | Google OAuth 2.0 + Whitelist por email       |
+| BD         | SQLite (sql.js)                              |
+| Frontend   | Tailwind CSS (CDN), Material Symbols         |
+| Email      | Nodemailer (Gmail SMTP)                      |
+| Push       | Web Push API (VAPID)                         |
+| PWA        | Service Worker + manifest.json               |
 
-- [ES] Resumen semanal por email
-- [EN] Weekly email summary
+---
 
-- [ES] Push notifications (PWA)
-- [EN] Push notifications (PWA)
+## Setup Local
 
-- [ES] Dark mode con transiciones suaves
-- [EN] Dark mode with smooth transitions
+### Requisitos
 
-- [ES] Diseño responsive (mobile + desktop)
-- [EN] Responsive design (mobile + desktop)
+- Node.js 18+
+- Cuenta de Google Cloud (para OAuth)
+- Gmail con App Password (para notificaciones)
 
-- [ES] Panel de administrador (solo ADMIN_EMAIL)
-- [EN] Admin panel (ADMIN_EMAIL only)
+### Instalación
+
+```bash
+# 1. Clonar el repositorio
+git clone https://github.com/DaikoDk/AppJuntas.git
+cd AppJuntas
+
+# 2. Copiar variables de entorno
+cp .env.example .env
+
+# 3. Instalar dependencias
+npm install
+
+# 4. Configurar .env (ver tabla abajo)
+
+# 5. Ejecutar
+npm run dev
+
+# App en http://localhost:3000
+```
+
+---
+
+## Variables de Entorno
+
+| Variable | Requerida | Descripción |
+|----------|-----------|-------------|
+| `GOOGLE_CLIENT_ID` | Sí | Client ID de Google Cloud Console |
+| `GOOGLE_CLIENT_SECRET` | Sí | Client Secret de Google Cloud Console |
+| `GOOGLE_CALLBACK_URL` | Sí | URL de callback OAuth (ej: `http://localhost:3000/auth/google/callback`) |
+| `SESSION_SECRET` | Sí | Secreto para firmar sesiones de usuario |
+| `ALLOWED_EMAILS` | Sí | Emails permitidos, separados por coma (ej: `user1@gmail.com,user2@gmail.com`) |
+| `ADMIN_EMAIL` | No | Email del administrador (accede al panel de admin) |
+| `GMAIL_USER` | No | Gmail para enviar notificaciones semanales |
+| `GMAIL_APP_PASSWORD` | No | App Password de Gmail (no la contraseña normal) |
+| `VAPID_PUBLIC_KEY` | No | Clave pública VAPID para push notifications |
+| `VAPID_PRIVATE_KEY` | No | Clave privada VAPID para push notifications |
+| `PORT` | No | Puerto del servidor (default: `3000`) |
+
+---
+
+## Autenticación
+
+La app utiliza Google OAuth como único método de login. Solo los emails listados en `ALLOWED_EMAILS` pueden acceder. El registro es automático al primer login con Google. Soporte para máximo 10 usuarios registrados.
+
+---
+
+## Estructura del Proyecto
+
+```
+AppJuntas/
+├── index.js                # Punto de entrada — Servidor Express
+├── .env                    # Variables de entorno (ver .env.example)
+├── .env.example            # Plantilla de variables de entorno
+├── package.json
+├── db/
+│   ├── database.js         # Capa de abstracción de BD (wrapper de sql.js)
+│   └── schema.js           # Inicialización del esquema + migraciones
+├── routes/
+│   ├── auth.js             # Google OAuth + manejo de sesiones
+│   ├── juntas.js           # CRUD de juntas + cesión de turnos
+│   ├── pagos.js            # Registro de pagos, deshacer, validación
+│   ├── participantes.js    # CRUD de participantes
+│   └── api.js              # Endpoints API (push, email, resumen semanal)
+├── services/
+│   ├── email.js            # Transporte Nodemailer (Gmail)
+│   └── notificaciones.js   # Notificaciones de meta semanal + resúmenes por email
+├── views/                  # Templates EJS
+│   ├── header.ejs          # Header/nav compartido + toggle dark mode
+│   ├── footer.ejs          # Footer compartido + nav móvil inferior
+│   ├── login.ejs           # Página de login (Google OAuth)
+│   ├── dashboard.ejs       # Dashboard con alertas + juntas activas
+│   ├── juntas.ejs          # Listado de juntas
+│   ├── junta.ejs           # Detalle de junta (pagos, turnos, historial)
+│   ├── junta-nueva.ejs     # Formulario para crear nueva junta
+│   ├── participantes.ejs   # Gestión de participantes + panel admin
+│   ├── historial.ejs       # Línea de tiempo de historial de pagos
+│   ├── alertas.ejs         # Alertas de pago atrasado
+│   └── no-autorizado.ejs   # Página de acceso denegado
+└── public/
+    ├── estilos.css         # CSS personalizado
+    ├── manifest.json       # Manifest PWA
+    └── sw.js               # Service Worker (push notifications)
+```
+
+---
+
+## Base de Datos
+
+SQLite con 11 tablas. La BD se crea automáticamente al primer inicio.
+
+| Tabla | Descripción |
+|-------|-------------|
+| `usuarios` | Cuentas de usuario (Google OAuth) |
+| `participantes` | Miembros de la comunidad de ahorro |
+| `juntas` | Grupos de ahorro |
+| `turnos` | Orden de cobro por junta |
+| `ciclos` | Semanas/ciclos de pago |
+| `metodos_pago` | Métodos de pago (Efectivo, Yape, Plin) |
+| `pagos` | Pagos registrados |
+| `historial` | Auditoría de eventos (append-only) |
+| `historial_cesiones` | Transferencias de turno |
+| `envios_email` | Log de emails enviados |
+| `suscripciones_push` | Suscripciones a notificaciones push |
+
+---
+
+## Funcionalidades
+
+- Auth con Google OAuth + whitelist por email
+- CRUD completo de participantes con validación de teléfono
+- Creación de juntas con turnos y ciclos automáticos
+- Registro de pagos manual e inteligente (prioriza deudas)
+- Distribución automática de excedentes a ciclos futuros
+- Deshacer pagos con reversión de excedentes
+- Cesión de turnos a otros participantes
+- Historial completo de pagos (audit trail append-only)
+- Alertas de deuda con conteo de días de atraso
+- Balance por participante
+- Resumen semanal por email
+- Push notifications (PWA)
+- Dark mode con transiciones suaves
+- Diseño responsive (mobile + desktop)
+- Panel de administrador (solo ADMIN_EMAIL)
 
 ---
 
