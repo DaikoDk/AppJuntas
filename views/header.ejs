@@ -238,6 +238,17 @@
     html.theme-transitioning *::after {
       transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease !important;
     }
+    @keyframes toast-shrink {
+      from { width: 100%; }
+      to { width: 0%; }
+    }
+    .toast-progress {
+      height: 3px;
+      background: #4648d4;
+      border-radius: 2px;
+      width: 100%;
+      animation: toast-shrink 5s linear forwards;
+    }
   </style>
 </head>
 <body class="font-body-md text-on-surface dark:text-inverse-on-surface antialiased bg-background dark:bg-surface-dark">

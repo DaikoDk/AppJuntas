@@ -217,6 +217,7 @@ router.get('/:id', (req, res) => {
     user: req.user,
     junta,
     error: req.query.error,
+    success: req.query.success,
     turnos,
     ciclos,
     pagosPorTurnoCiclo,
@@ -306,7 +307,7 @@ router.post('/:id/ceder', (req, res) => {
 
       execute('UPDATE turnos SET activo = 0 WHERE id = ?', [turno.id]);
     });
-    return res.redirect(`/juntas/${junta_id}`);
+    return res.redirect(`/juntas/${junta_id}?success=1`);
   } catch (e) {
     console.error('Error en ceder:', e);
     return res.redirect(`/juntas/${junta_id}?error=error_general`);

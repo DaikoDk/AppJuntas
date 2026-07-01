@@ -3,17 +3,17 @@
 <% const pozoSemanal = junta.monto_aporte * totalTurnos; %>
 <% const ahora = new Date(); %>
 <% if (error === 'fecha_futura') { %>
-<div class="bg-error-container border border-error-container rounded-xl p-4 flex items-center gap-3 mb-4">
+<div data-autodismiss class="bg-error-container border border-error-container rounded-xl p-4 flex items-center gap-3 mb-4 transition-opacity duration-300">
   <span class="material-symbols-outlined text-error-alert">warning</span>
   <p class="font-body-md text-body-md text-on-surface font-medium">La fecha del pago no puede ser mayor a la actual.</p>
 </div>
 <% } else if (error === 'exceso_no_revertible') { %>
-<div class="bg-warning-debt/10 border border-warning-debt/30 rounded-xl p-4 flex items-center gap-3 mb-4">
+<div data-autodismiss class="bg-warning-debt/10 border border-warning-debt/30 rounded-xl p-4 flex items-center gap-3 mb-4 transition-opacity duration-300">
   <span class="material-symbols-outlined text-warning-debt">info</span>
   <p class="font-body-md text-body-md text-on-surface font-medium">No puedes deshacer un pago de exceso. Deshace el pago original que lo generó.</p>
 </div>
 <% } else if (error === 'monto_excede_deuda') { %>
-<div class="bg-error-container border border-error-container rounded-xl p-4 flex items-center gap-3 mb-4">
+<div data-autodismiss class="bg-error-container border border-error-container rounded-xl p-4 flex items-center gap-3 mb-4 transition-opacity duration-300">
   <span class="material-symbols-outlined text-error-alert">warning</span>
   <p class="font-body-md text-body-md text-on-surface font-medium">El monto supera la deuda total del participante.</p>
 </div>
@@ -42,20 +42,31 @@
     </a>
   </div>
 </section>
-<% if (historial.length > 0) { %>
-<div class="bg-surface-container-low border border-surface-variant rounded-xl p-4 flex items-center gap-3 mb-4">
-  <div class="w-10 h-10 rounded-full bg-<%= historial[0].tipo === 'pago' ? 'success-payment/10' : (historial[0].tipo === 'pago_eliminado' ? 'error-container' : 'warning-debt/10') %> flex items-center justify-center">
-    <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">
-      <%= historial[0].tipo === 'pago' ? 'check_circle' : (historial[0].tipo === 'pago_eliminado' ? 'undo' : 'swap_horiz') %>
-    </span>
+<% if (success && historial.length > 0) { %>
+<%
+  const ultimo = historial[0];
+  const tipo = ultimo.tipo;
+  const esPago = tipo === 'pago';
+  const esExceso = tipo === 'pago_exceso';
+  const esEliminado = tipo === 'pago_eliminado';
+  const esExcesoEliminado = tipo === 'pago_exceso_eliminado';
+%>
+<div data-autodismiss class="fixed top-20 left-1/2 -translate-x-1/2 z-[90] bg-surface-container-low border border-surface-variant rounded-xl p-4 flex flex-col gap-3 shadow-xl transition-opacity duration-300 max-w-[90vw] overflow-hidden">
+  <div class="flex items-center gap-3">
+    <div class="w-10 h-10 rounded-full bg-<%= (esPago || esExceso) ? 'success-payment/10' : (esEliminado ? 'error-container' : 'warning-debt/10') %> flex items-center justify-center">
+      <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">
+        <%= esPago ? 'check_circle' : (esExceso ? 'add_circle' : (esEliminado ? 'undo' : 'cancel')) %>
+      </span>
+    </div>
+    <p class="font-body-md text-body-md text-on-surface-variant">
+      <span class="font-semibold text-on-surface">
+        <%= esPago ? 'Pago registrado:' : (esExceso ? 'Exceso aplicado:' : (esEliminado ? 'Pago eliminado:' : 'Exceso eliminado:')) %>
+      </span>
+      <%= esPago ? ultimo.participante_nombre + ' pagó S/' + ultimo.monto.toFixed(0) : (esExceso ? ultimo.participante_nombre + ' exceso S/' + ultimo.monto.toFixed(0) : (esEliminado ? ultimo.participante_nombre + ' eliminó S/' + ultimo.monto.toFixed(0) : ultimo.participante_nombre + ' exceso eliminado S/' + ultimo.monto.toFixed(0))) %>
+      <%= new Date(ultimo.fecha_pago || ultimo.fecha_registro).toLocaleDateString() %>
+    </p>
   </div>
-  <p class="font-body-md text-body-md text-on-surface-variant">
-    <span class="font-semibold text-on-surface">
-      <%= historial[0].tipo === 'pago' ? 'Pago registrado:' : (historial[0].tipo === 'pago_eliminado' ? 'Pago eliminado:' : 'Cesión:') %>
-    </span>
-    <%= historial[0].tipo === 'pago' ? historial[0].participante_nombre + ' pagó S/' + historial[0].monto.toFixed(0) : (historial[0].tipo === 'pago_eliminado' ? historial[0].participante_nombre + ' eliminó S/' + historial[0].monto.toFixed(0) : historial[0].descripcion) %>
-    (<%= historial[0].tipo === 'cesion' ? new Date(historial[0].creado_en || historial[0].fecha_registro).toLocaleDateString() : new Date(historial[0].fecha_pago || historial[0].fecha_registro).toLocaleDateString() %>)
-  </p>
+  <div class="toast-progress"></div>
 </div>
 <% } %>
 <% if (turnos.length === 0) { %>
@@ -497,6 +508,8 @@ function seleccionarMetodo(btn, id) {
   document.getElementById('pagoMetodoId').value = id;
 }
 document.getElementById('formPago')?.addEventListener('submit', function(e) {
+  e.preventDefault();
+  const form = this;
   const errDiv = document.getElementById('pagoError');
   errDiv.classList.add('hidden');
   let d;
@@ -515,8 +528,29 @@ document.getElementById('formPago')?.addEventListener('submit', function(e) {
   if (d.getTime() > Date.now()) {
     errDiv.textContent = 'La fecha del pago no puede ser mayor a la actual.';
     errDiv.classList.remove('hidden');
-    e.preventDefault();
+    return;
   }
+  const body = new URLSearchParams(new FormData(form));
+  fetch('/pagos/validar', { method: 'POST', body })
+    .then(r => r.json())
+    .then(data => {
+      if (data.ok) {
+        form.submit();
+      } else if (data.error === 'monto_excede_deuda') {
+        errDiv.textContent = 'El monto supera la deuda total del participante.';
+        errDiv.classList.remove('hidden');
+      } else {
+        form.submit();
+      }
+    })
+    .catch(() => form.submit());
+});
+
+document.querySelectorAll('[data-autodismiss]').forEach(el => {
+  setTimeout(() => {
+    el.style.opacity = '0';
+    setTimeout(() => el.remove(), 300);
+  }, 5000);
 });
 </script>
 <%- include('footer') %>

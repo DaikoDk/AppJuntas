@@ -194,7 +194,7 @@ router.post('/registrar', (req, res) => {
     });
 
     verificarCompletadoCiclo(ciclo_id, junta_id);
-    return res.redirect(`/juntas/${junta_id}`);
+    return res.redirect(`/juntas/${junta_id}?success=1`);
   } catch (e) {
     console.error('Error en /registrar:', e);
     return res.redirect(`/juntas/${junta_id}?error=error_general`);
@@ -283,7 +283,7 @@ router.post('/registrar-inteligente', (req, res) => {
       verificarCompletadoCiclo(ciclo.id, junta.id);
     }
 
-    return res.redirect(`/juntas/${junta_id}`);
+    return res.redirect(`/juntas/${junta_id}?success=1`);
   } catch (e) {
     console.error('Error en /registrar-inteligente:', e);
     return res.redirect(`/juntas/${junta_id}?error=error_general`);
@@ -349,22 +349,45 @@ router.post('/deshacer', (req, res) => {
         if (exPago) {
           execute('DELETE FROM pagos WHERE id = ?', [exPago.id]);
         }
-        execute('DELETE FROM historial WHERE id = ?', [ex.h_id]);
+        execute("UPDATE historial SET tipo = 'pago_exceso_eliminado' WHERE id = ?", [ex.h_id]);
       }
 
       execute('DELETE FROM pagos WHERE id = ?', [ultimoPago.id]);
 
-      execute(
-        'DELETE FROM historial WHERE pago_id = ? AND tipo = ?',
-        [ultimoPago.id, 'pago']
-      );
-
       execute('UPDATE ciclos SET completado = 0 WHERE id = ?', [ciclo_id]);
     });
 
-    return res.redirect(`/juntas/${junta_id}`);
+    return res.redirect(`/juntas/${junta_id}?success=1`);
   } catch (e) {
     console.error('Error en /deshacer:', e);
     return res.redirect(`/juntas/${junta_id}?error=error_general`);
   }
+});
+
+router.post('/validar', (req, res) => {
+  const turno_id = safeId(req.body.turno_id);
+  const junta_id = safeId(req.body.junta_id);
+  const monto = safeFloat(req.body.monto);
+
+  if (!turno_id || !junta_id || monto === null || monto <= 0) {
+    return res.json({ ok: false, error: 'parametros_invalidos' });
+  }
+
+  const junta = queryOne('SELECT * FROM juntas WHERE id = ? AND usuario_id = ?', [junta_id, req.user.id]);
+  if (!junta) return res.json({ ok: false, error: 'junta_no_existe' });
+
+  const pagosTurno = query(
+    'SELECT ciclo_id, SUM(monto) as total FROM pagos WHERE turno_id = ? GROUP BY ciclo_id',
+    [turno_id]
+  );
+  const pagosMap = {};
+  pagosTurno.forEach(p => { pagosMap[p.ciclo_id] = p.total; });
+  const ciclos = query('SELECT id FROM ciclos WHERE junta_id = ?', [junta_id]);
+  const deudaTotal = ciclos.reduce((sum, c) => sum + Math.max(0, junta.monto_aporte - (pagosMap[c.id] || 0)), 0);
+
+  if (monto > deudaTotal) {
+    return res.json({ ok: false, error: 'monto_excede_deuda' });
+  }
+
+  res.json({ ok: true });
 });
